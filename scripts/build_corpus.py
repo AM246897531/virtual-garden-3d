@@ -14,7 +14,7 @@ ARTIFACTS = ROOT / "artifacts"
 RAW = ARTIFACTS / "raw-corpus"
 ASSETS = ROOT / "app/src/main/assets"
 INDEX_URL = "https://raw.githubusercontent.com/Sefaria/Sefaria-Export/master/books.json"
-PREFERRED = ["Torat Emet 363", "Wikisource Mishneh Torah", "Torat Emet 370"]
+PREFERRED = ["Torat Emet 363", "Torat Emet 370", "Torat Emet 363 - censorship omissions reinserted  "]
 EXCLUSIONS = {
     "Mishneh Torah, Positive Mitzvot", "Mishneh Torah, Negative Mitzvot",
     "Mishneh Torah, Overview of Mishneh Torah Contents",
