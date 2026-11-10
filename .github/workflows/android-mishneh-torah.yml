@@ -1,0 +1,54 @@
+name: Build full offline Mishneh Torah Android
+on:
+  push:
+    branches:
+      - feature/mishneh-torah-offline-android
+  workflow_dispatch:
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install corpus build dependency
+        run: python -m pip install requests==2.32.3
+      - name: Test Hebrew normalization
+        run: python scripts/test_corpus_utils.py
+      - name: Download and verify FULL public-domain Hebrew corpus; prebuild FTS index
+        run: python scripts/build_corpus.py
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Android SDK
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+      - name: Build signed installable debug APK
+        run: gradle --no-daemon :app:assembleDebug
+      - name: Collect hashes and bundle metadata
+        if: success()
+        run: |
+          mkdir -p artifacts/delivery
+          cp app/build/outputs/apk/debug/app-debug.apk artifacts/delivery/MishnehTorah-Offline-Android-debug.apk
+          cp artifacts/SOURCE_MANIFEST.json artifacts/delivery/
+          cp artifacts/corpus_report.json artifacts/delivery/
+          cp app/src/main/assets/rambam.sqlite artifacts/delivery/
+          (cd artifacts/delivery && sha256sum * > SHA256SUMS.txt)
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Mishneh-Torah-Build-Results
+          path: |
+            artifacts/delivery/
+            artifacts/corpus_report.json
+            artifacts/SOURCE_MANIFEST.json
+          if-no-files-found: warn
+          retention-days: 14
