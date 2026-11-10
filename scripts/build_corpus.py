@@ -74,6 +74,10 @@ def main() -> None:
         x.get("title", "").startswith("Mishneh Torah, ") and
         x.get("language", "").lower() in ("hebrew", "he") and
         "Mishneh Torah" in x.get("categories", []) and x.get("json_url")]
+    # Diagnostic catalog for identifying a single complete Hebrew edition.
+    all_primary = [x for x in index.get("books", []) if x.get("title", "").startswith("Mishneh Torah, ") and x.get("language", "").lower() in ("hebrew", "he")]
+    print("INDEX_AUDIT", "unique_primary_sections", len(set(x.get("title") for x in all_primary)), "candidate_sections", len(candidates), "versions", dict(Counter(x.get("versionTitle") for x in all_primary)), flush=True)
+    print("MISSING_FROM_PRIMARY", sorted(set(x.get("title") for x in all_primary) - set(x.get("title") for x in candidates)), flush=True)
     # Fail closed: do not use a merged file or an unknown-license version to mask missing text.
     if len(candidates) < 80:
         raise RuntimeError("Incomplete candidate list: found " + str(len(candidates)) +
