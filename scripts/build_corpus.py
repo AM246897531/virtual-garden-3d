@@ -15,7 +15,10 @@ OUTPUT = ROOT / "app/src/main/assets"
 ARTIFACTS = ROOT / "artifacts"
 RAW = ARTIFACTS / "raw-corpus"
 INDEX_URL = "https://raw.githubusercontent.com/Sefaria/Sefaria-Export/master/books.json"
-VERSION = "Torat Emet 363"
+VERSION = "Wikisource Mishneh Torah"
+INTRO_TITLES = {"Mishneh Torah, Positive Mitzvot", "Mishneh Torah, Negative Mitzvot",
+    "Mishneh Torah, Overview of Mishneh Torah Contents",
+    "Mishneh Torah, The Order of Prayer", "Mishneh Torah, Transmission of the Oral Law"}
 BOOKS = {
     "Mada": "ספר המדע", "Ahavah": "ספר אהבה", "Zemanim": "ספר זמנים",
     "Nashim": "ספר נשים", "Kedushah": "ספר קדושה", "Haflaah": "ספר הפלאה",
@@ -72,6 +75,7 @@ def main() -> None:
     candidates = [x for x in index.get("books", []) if
         x.get("versionTitle") == VERSION and
         x.get("title", "").startswith("Mishneh Torah, ") and
+        x.get("title") not in INTRO_TITLES and
         x.get("language", "").lower() in ("hebrew", "he") and
         "Mishneh Torah" in x.get("categories", []) and x.get("json_url")]
     # Diagnostic catalog for identifying a single complete Hebrew edition.
@@ -79,7 +83,7 @@ def main() -> None:
     print("INDEX_AUDIT", "unique_primary_sections", len(set(x.get("title") for x in all_primary)), "candidate_sections", len(candidates), "versions", dict(Counter(x.get("versionTitle") for x in all_primary)), flush=True)
     print("MISSING_FROM_PRIMARY", sorted(set(x.get("title") for x in all_primary) - set(x.get("title") for x in candidates)), flush=True)
     # Fail closed: do not use a merged file or an unknown-license version to mask missing text.
-    if len(candidates) < 80:
+    if len(candidates) < 83:
         raise RuntimeError("Incomplete candidate list: found " + str(len(candidates)) +
                            " sections in Sefaria index, expected at least 80.")
     candidates.sort(key=lambda x: x["title"])
@@ -92,7 +96,7 @@ def main() -> None:
         url = entry["json_url"]
         data, raw = fetch_json(session, url)
         license_text = str(data.get("license") or "").strip()
-        if license_text.lower() not in ("public domain", "pd", "cc0"):
+        if license_text.lower() not in ("public domain", "pd", "cc0", "cc-by-sa", "cc by-sa"):
             raise RuntimeError("Refusing to package unverified license for " +
                                entry["title"] + ": " + repr(license_text))
         categories = data.get("categories") or entry.get("categories") or []
@@ -101,7 +105,7 @@ def main() -> None:
             raise RuntimeError("Unknown Mishneh Torah sefer category: " + repr(categories))
         section = data.get("heTitle") or entry.get("heTitle")
         if not section:
-            raise RuntimeError("Missing Hebrew title: " + entry["title"])
+            section = entry["title"].split(", ", 1)[-1]
         chapters = data.get("text")
         if not isinstance(chapters, list) or not chapters:
             raise RuntimeError("Missing chapters in " + entry["title"])
