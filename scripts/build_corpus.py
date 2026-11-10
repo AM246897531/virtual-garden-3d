@@ -30,6 +30,7 @@ TAGS = re.compile(r"<[^>]+>")
 def normalize(s: str) -> str:
     s = unicodedata.normalize("NFKC", s)
     s = HEBREW_MARKS.sub("", s)
+    s = re.sub(r"[\u05be\u05c0\u05c3\u05f3\u05f4]", " ", s)
     s = s.replace("ך", "כ").replace("ם", "מ").replace("ן", "נ").replace("ף", "פ").replace("ץ", "צ")
     s = PUNCTUATION.sub(" ", s)
     return " ".join(s.lower().split())

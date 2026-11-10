@@ -34,6 +34,7 @@ object HebrewSearch {
     fun normalize(query: String): String {
         var t = Normalizer.normalize(query, Normalizer.Form.NFKC)
         t = marks.replace(t, "")
+        t = Regex("[\\u05BE\\u05C0\\u05C3\\u05F3\\u05F4]").replace(t, " ")
         t = t.replace('ך', 'כ').replace('ם', 'מ').replace('ן', 'נ')
             .replace('ף', 'פ').replace('ץ', 'צ')
         return separators.replace(t, " ").trim().lowercase().replace(Regex("\\s+"), " ")
@@ -81,7 +82,7 @@ class CorpusStore private constructor(private val db: SQLiteDatabase) {
     }
     fun sections(book: String): List<String> {
         val out = mutableListOf<String>()
-        db.rawQuery("SELECT DISTINCT section FROM laws WHERE book=? ORDER BY MIN(id)", arrayOf(book)).use { c ->
+        db.rawQuery("SELECT section FROM laws WHERE book=? GROUP BY section ORDER BY MIN(id)", arrayOf(book)).use { c ->
             while (c.moveToNext()) out.add(c.getString(0))
         }
         return out
