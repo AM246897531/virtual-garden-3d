@@ -88,6 +88,7 @@ def main():
     by_book = Counter()
     records = []
     seen = set()
+    gaps = []
     for title in sorted(by_title):
         sources = []
         for ver in PREFERRED:
@@ -116,9 +117,22 @@ def main():
             chosen = next((src for src in sources if cidx < len(src["data"]["text"]) and
                            is_complete_chapter(src["data"]["text"][cidx])), None)
             if not chosen:
-                raise RuntimeError("No complete lawful chapter for " + title + " chapter " + str(cidx+1))
+                # Do not invent missing halakhot; preserve best available text and report every gap.
+                available = [src for src in sources if cidx < len(src["data"]["text"]) and
+                    isinstance(src["data"]["text"][cidx], list)]
+                if not available:
+                    gaps.append({"title": title, "chapter": cidx+1, "issue": "no chapter in licensed editions"})
+                    print("MISSING_CHAPTER", title, cidx+1, flush=True)
+                    continue
+                chosen = max(available, key=lambda x: sum(
+                    isinstance(v, str) and bool(cleaned_text(v)) for v in x["data"]["text"][cidx]))
+                print("PARTIAL_CHAPTER", title, cidx+1, chosen["version"], flush=True)
             laws = chosen["data"]["text"][cidx]
             for law_index, law in enumerate(laws, 1):
+                if not isinstance(law, str) or not cleaned_text(law):
+                    gaps.append({"title": title, "chapter": cidx+1, "halakhah": law_index,
+                                 "issue": "missing in selected verified version"})
+                    continue
                 key = (title, cidx+1, law_index)
                 if key in seen: raise RuntimeError("Duplicate " + str(key))
                 seen.add(key)
@@ -156,7 +170,9 @@ def main():
         assert db.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
         assert db.execute("SELECT count(*) FROM laws").fetchone()[0] == len(records)
     finally: db.close()
-    report = {"total_books": len(by_book), "total_sections": len(by_title),
+    report = {"completeness": "partial" if gaps else "complete",
+        "gaps": gaps, "missing_count": len(gaps),
+        "total_books": len(by_book), "total_sections": len(by_title),
         "halakhot": len(records), "books": dict(by_book), "chapters_by_edition": dict(chapters_used),
         "sqlite_sha256": hashlib.sha256(target.read_bytes()).hexdigest(),
         "source_note": "Chapter-by-chapter selection; per-law edition column preserved"}
@@ -165,6 +181,7 @@ def main():
         {"index": INDEX_URL, "index_sha256": hashlib.sha256(index_bytes).hexdigest(),
          "sections": manifest, "license_policy": "Public Domain or CC-BY-SA only"},
         ensure_ascii=False, indent=2), encoding="utf8")
-    print("SUCCESS", len(records), "halakhot", len(by_book), "books", dict(chapters_used), flush=True)
+    print("CORPUS_BUILT", len(records), "halakhot", len(by_book), "books",
+          "missing", len(gaps), dict(chapters_used), flush=True)
 
 if __name__ == "__main__": main()
