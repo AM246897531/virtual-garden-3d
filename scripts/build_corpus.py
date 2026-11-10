@@ -14,7 +14,7 @@ ARTIFACTS = ROOT / "artifacts"
 RAW = ARTIFACTS / "raw-corpus"
 ASSETS = ROOT / "app/src/main/assets"
 INDEX_URL = "https://raw.githubusercontent.com/Sefaria/Sefaria-Export/master/books.json"
-PREFERRED = ["Torat Emet 363", "Torat Emet 370", "Torat Emet 363 - censorship omissions reinserted  "]
+PREFERRED = ["Torat Emet 363", "Torat Emet 370", "Torat Emet 363 - censorship omissions reinserted  ", "Wikisource Mishneh Torah"]
 EXCLUSIONS = {
     "Mishneh Torah, Positive Mitzvot", "Mishneh Torah, Negative Mitzvot",
     "Mishneh Torah, Overview of Mishneh Torah Contents",
@@ -96,7 +96,8 @@ def main():
             data, raw = download(s, entry["json_url"])
             license_ = (data.get("license") or "").strip()
             if license_.lower() not in ("public domain", "pd", "cc0", "cc-by-sa", "cc by-sa"):
-                raise RuntimeError("Unverified license for " + title + ": " + license_)
+                print("SKIP_UNVERIFIED_LICENSE", title, ver, repr(license_), flush=True)
+                continue
             if not isinstance(data.get("text"), list): continue
             slug = re.sub("[^a-zA-Z0-9_]", "_", title)[:110] + "__" + re.sub("[^a-zA-Z0-9_]", "_", ver) + ".json"
             (RAW / slug).write_bytes(raw)
