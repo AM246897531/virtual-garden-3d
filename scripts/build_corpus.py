@@ -129,16 +129,28 @@ def main():
                 print("PARTIAL_CHAPTER", title, cidx+1, chosen["version"], flush=True)
             laws = chosen["data"]["text"][cidx]
             for law_index, law in enumerate(laws, 1):
+                law_source = chosen
+                if not isinstance(law, str) or not cleaned_text(law):
+                    for alternative in sources:
+                        chapters_alt = alternative["data"]["text"]
+                        if cidx >= len(chapters_alt) or not isinstance(chapters_alt[cidx], list): continue
+                        chapter_alt = chapters_alt[cidx]
+                        if law_index <= len(chapter_alt) and isinstance(chapter_alt[law_index-1], str) and cleaned_text(chapter_alt[law_index-1]):
+                            law = chapter_alt[law_index-1]
+                            law_source = alternative
+                            print("SEGMENT_FALLBACK", title, cidx+1, law_index, alternative["version"], flush=True)
+                            break
                 if not isinstance(law, str) or not cleaned_text(law):
                     gaps.append({"title": title, "chapter": cidx+1, "halakhah": law_index,
-                                 "issue": "missing in selected verified version"})
+                                 "issue": "missing in every verified version"})
+                    print("MISSING_LAW", title, cidx+1, law_index, flush=True)
                     continue
                 key = (title, cidx+1, law_index)
                 if key in seen: raise RuntimeError("Duplicate " + str(key))
                 seen.add(key)
                 body = cleaned_text(law)
                 records.append((book, section, cidx+1, law_index,
-                                body, normalize(body), title, chosen["version"]))
+                                body, normalize(body), title, law_source["version"]))
                 by_book[book] += 1
             chapters_used[chosen["version"]] += 1
         manifest.append({"title": title, "heTitle": section, "book": book,

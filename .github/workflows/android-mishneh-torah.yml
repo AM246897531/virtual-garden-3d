@@ -26,6 +26,8 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
       - name: Android SDK
         run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
       - uses: gradle/actions/setup-gradle@v4
@@ -41,6 +43,10 @@ jobs:
           cp artifacts/SOURCE_MANIFEST.json artifacts/delivery/
           cp artifacts/corpus_report.json artifacts/delivery/
           cp app/src/main/assets/rambam.sqlite artifacts/delivery/
+          git archive --format=zip -o artifacts/delivery/MishnehTorah-Android-Source.zip HEAD
+          cp ATTRIBUTION_AND_LICENSES.md artifacts/delivery/
+          printf "Build: GitHub Actions; Gradle 8.10.2; JDK 17; Android 35.\nAPK: signed Android debug APK.\nEmulator/device test: not yet performed by this workflow.\nSemantic AI model: NOT included.\nSee corpus_report.json for actual completeness.\n" > artifacts/delivery/BUILD_AND_TEST_REPORT.md
+          (cd artifacts && zip -q -r delivery/Rambam-Licensed-Raw-Corpus.zip raw-corpus)
           (cd artifacts/delivery && sha256sum * > SHA256SUMS.txt)
       - uses: actions/upload-artifact@v4
         if: always()
