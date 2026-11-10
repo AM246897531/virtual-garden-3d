@@ -71,6 +71,7 @@ def main() -> None:
     index, index_bytes = fetch_json(session, INDEX_URL)
     candidates = [x for x in index.get("books", []) if
         x.get("versionTitle") == VERSION and
+        x.get("title", "").startswith("Mishneh Torah, ") and
         x.get("language", "").lower() in ("hebrew", "he") and
         "Mishneh Torah" in x.get("categories", []) and x.get("json_url")]
     # Fail closed: do not use a merged file or an unknown-license version to mask missing text.
