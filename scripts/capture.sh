@@ -65,8 +65,8 @@ for attempt in $(seq 1 180); do
     # Accuracy AND source-excerpt fidelity are independent gates.
     passed="$(echo "$summary" | sed -nE 's/.*passed=([0-9]+).*/\1/p')"
     marked="$(echo "$summary" | sed -nE 's/.*highlighted=([0-9]+).*/\1/p')"
-    if [[ -z "$passed" || -z "$marked" || "$passed" -lt 100 || "$marked" -lt 100 ]]; then
-      echo "QUALITY_GATE_NOT_MET: sources=$passed/110 highlights=$marked/110, minimum=100" >&2
+    if [[ -z "$passed" || -z "$marked" || "$passed" -lt 110 || "$marked" -lt 110 ]]; then
+      echo "QUALITY_GATE_NOT_MET: sources=$passed/110 highlights=$marked/110, minimum=110" >&2
       adb logcat -d -t 12000 > "$OUT/quality-gate-failure-logcat.txt"
       exit 1
     fi
