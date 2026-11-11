@@ -68,5 +68,6 @@ jobs:
             artifacts/char3_report.json
             artifacts/gold_answer_offsets_100.json
             artifacts/experimental_e5_100.json
+            artifacts/experimental_e5_scores_100.npz
           retention-days: 30
           if-no-files-found: warn
