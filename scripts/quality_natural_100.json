@@ -1,0 +1,940 @@
+[
+  {
+    "tier": 1,
+    "question": "כמה פעמים ביום צריך לקרוא קריאת שמע?",
+    "section": "קריאת שמע",
+    "chapter": 1,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 1
+  },
+  {
+    "tier": 1,
+    "question": "באיזו תפילה אנחנו מחויבים בכל יום?",
+    "section": "תפילה וברכת כהנים",
+    "chapter": 1,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 1
+  },
+  {
+    "tier": 1,
+    "question": "מתי זמן תפילת שחרית?",
+    "section": "תפילה וברכת כהנים",
+    "chapter": 3,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 1
+  },
+  {
+    "tier": 1,
+    "question": "מתי חייבים מן התורה לברך ברכת המזון?",
+    "section": "ברכות",
+    "chapter": 1,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 1
+  },
+  {
+    "tier": 1,
+    "question": "מה סדר הברכות בברכת המזון?",
+    "section": "ברכות",
+    "chapter": 2,
+    "law": 1,
+    "highlight_contains": "ראשונה ברכת הזן",
+    "origin": "prior-regression",
+    "difficulty": 1
+  },
+  {
+    "tier": 1,
+    "question": "צריך ליטול ידיים לפני אכילת לחם?",
+    "section": "ברכות",
+    "chapter": 6,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 1
+  },
+  {
+    "tier": 1,
+    "question": "מה עושים כשיש סכנת חיים בשבת?",
+    "section": "שבת",
+    "chapter": 2,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 1
+  },
+  {
+    "tier": 1,
+    "question": "מה הן שלושים ותשע מלאכות שבת?",
+    "section": "שבת",
+    "chapter": 7,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 1
+  },
+  {
+    "tier": 1,
+    "question": "כמה נרות מדליקים בחנוכה?",
+    "section": "מגילה וחנוכה",
+    "chapter": 4,
+    "law": 1,
+    "highlight_contains": "מצותה שיהיה",
+    "origin": "prior-regression",
+    "difficulty": 1
+  },
+  {
+    "tier": 1,
+    "question": "באיזו שעה מדליקים נרות חנוכה?",
+    "section": "מגילה וחנוכה",
+    "chapter": 4,
+    "law": 5,
+    "origin": "prior-regression",
+    "difficulty": 1
+  },
+  {
+    "tier": 1,
+    "question": "מהי מצוות אכילת מצה בליל פסח?",
+    "section": "חמץ ומצה",
+    "chapter": 6,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 1
+  },
+  {
+    "tier": 1,
+    "question": "האם חמץ אסור באכילה בחג הפסח?",
+    "section": "חמץ ומצה",
+    "chapter": 1,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 1
+  },
+  {
+    "tier": 1,
+    "question": "מה המצווה בשמיעת שופר בראש השנה?",
+    "section": "שופר וסוכה ולולב",
+    "chapter": 1,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 1
+  },
+  {
+    "tier": 1,
+    "question": "מה הגובה המותר של סוכה?",
+    "section": "שופר וסוכה ולולב",
+    "chapter": 4,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 1
+  },
+  {
+    "tier": 1,
+    "question": "ממה מותר לעשות סכך לסוכה?",
+    "section": "שופר וסוכה ולולב",
+    "chapter": 5,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 1
+  },
+  {
+    "tier": 1,
+    "question": "איזה בגד חייב בציצית?",
+    "section": "ציצית",
+    "chapter": 3,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 1
+  },
+  {
+    "tier": 1,
+    "question": "היכן מניחים תפילין של ראש?",
+    "section": "תפילין ומזוזה וספר תורה",
+    "chapter": 4,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 1
+  },
+  {
+    "tier": 1,
+    "question": "מה כותבים בפרשיות המזוזה?",
+    "section": "תפילין ומזוזה וספר תורה",
+    "chapter": 5,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 1
+  },
+  {
+    "tier": 1,
+    "question": "האם יש מצווה לכתוב ספר תורה לעצמי?",
+    "section": "תפילין ומזוזה וספר תורה",
+    "chapter": 7,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 1
+  },
+  {
+    "tier": 1,
+    "question": "איזו מצווה יש לתת צדקה לעניים?",
+    "section": "מתנות עניים",
+    "chapter": 7,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 1
+  },
+  {
+    "tier": 2,
+    "question": "אם אמרתי שמע ישראל אבל לא התכוונתי בפסוק הראשון יצאתי ידי חובה?",
+    "section": "קריאת שמע",
+    "chapter": 2,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 2
+  },
+  {
+    "tier": 2,
+    "question": "עד איזה שעה אפשר להשלים תפילת שחרית גם אם לא התפללתי עם הזריחה?",
+    "section": "תפילה וברכת כהנים",
+    "chapter": 3,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 2
+  },
+  {
+    "tier": 2,
+    "question": "מהם הדברים שמעכבים תפילה אפילו כשכבר הגיע הזמן?",
+    "section": "תפילה וברכת כהנים",
+    "chapter": 4,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 2
+  },
+  {
+    "tier": 2,
+    "question": "שכחתי להזכיר ראש חודש בברכת המזון האם עלי לחזור?",
+    "section": "ברכות",
+    "chapter": 2,
+    "law": 13,
+    "origin": "prior-regression",
+    "difficulty": 2
+  },
+  {
+    "tier": 2,
+    "question": "שכחתי רצה והחליצנו בסעודה של שבת איך מתקנים?",
+    "section": "ברכות",
+    "chapter": 2,
+    "law": 12,
+    "origin": "prior-regression",
+    "difficulty": 2
+  },
+  {
+    "tier": 2,
+    "question": "אכלתי תוך כדי הליכה איפה צריך לומר ברכת המזון?",
+    "section": "ברכות",
+    "chapter": 4,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 2
+  },
+  {
+    "tier": 2,
+    "question": "האם צריך להדליק נר של שבת או שזה רק מנהג?",
+    "section": "שבת",
+    "chapter": 5,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 2
+  },
+  {
+    "tier": 2,
+    "question": "אפשר להתחיל עבודה בערב שבת שתסתיים לבד ביום השבת?",
+    "section": "שבת",
+    "chapter": 3,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 2
+  },
+  {
+    "tier": 2,
+    "question": "האם מותר לאכול או לשתות קודם שעושים קידוש בליל שבת?",
+    "section": "שבת",
+    "chapter": 29,
+    "law": 5,
+    "origin": "prior-regression",
+    "difficulty": 2
+  },
+  {
+    "tier": 2,
+    "question": "האם אפשר לקרוא את המגילה בפורים שלא לפי סדר הפסוקים?",
+    "section": "מגילה וחנוכה",
+    "chapter": 2,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 2
+  },
+  {
+    "tier": 2,
+    "question": "מי חייב בקריאת מגילה בפורים?",
+    "section": "מגילה וחנוכה",
+    "chapter": 1,
+    "law": 1,
+    "highlight_contains": "הכל חיבים בקריאתה",
+    "origin": "prior-regression",
+    "difficulty": 2
+  },
+  {
+    "tier": 2,
+    "question": "למה צריך לספר על יציאת מצרים בליל הסדר?",
+    "section": "חמץ ומצה",
+    "chapter": 7,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 2
+  },
+  {
+    "tier": 2,
+    "question": "מתי צריך להשבית את החמץ לפני פסח?",
+    "section": "חמץ ומצה",
+    "chapter": 2,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 2
+  },
+  {
+    "tier": 2,
+    "question": "כמה תקיעות של שופר צריך לשמוע בראש השנה מעיקר הדין?",
+    "section": "שופר וסוכה ולולב",
+    "chapter": 3,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 2
+  },
+  {
+    "tier": 2,
+    "question": "מהו צבע התכלת של חוטי הציצית?",
+    "section": "ציצית",
+    "chapter": 2,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 2
+  },
+  {
+    "tier": 2,
+    "question": "איזה תנאים צריך שיהיו בבית כדי שיתחייב במזוזה?",
+    "section": "תפילין ומזוזה וספר תורה",
+    "chapter": 6,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 2
+  },
+  {
+    "tier": 2,
+    "question": "איך אדם שחטא צריך להתוודות כשהוא חוזר בתשובה?",
+    "section": "תשובה",
+    "chapter": 1,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 2
+  },
+  {
+    "tier": 2,
+    "question": "מה זה נקרא לחזור בתשובה שלמה?",
+    "section": "תשובה",
+    "chapter": 2,
+    "law": 1,
+    "highlight_contains": "זה שבא לידו",
+    "origin": "prior-regression",
+    "difficulty": 2
+  },
+  {
+    "tier": 2,
+    "question": "אבא חייב ללמד את בנו תורה?",
+    "section": "תלמוד תורה",
+    "chapter": 1,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 2
+  },
+  {
+    "tier": 2,
+    "question": "למה חובה לכבד את הרב שלימד אותי אפילו יותר מאבא?",
+    "section": "תלמוד תורה",
+    "chapter": 5,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 2
+  },
+  {
+    "tier": 3,
+    "question": "הייתי עסוק וקראתי קריאת שמע בלי מחשבה בזמן שאמרתי שמע ישראל, האם הקריאה נחשבת?",
+    "section": "קריאת שמע",
+    "chapter": 2,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 3
+  },
+  {
+    "tier": 3,
+    "question": "יש חולה שנשקפת לו סכנה אבל לא בטוח; האם מחללים שבת כדי להציל אותו?",
+    "section": "שבת",
+    "chapter": 2,
+    "law": 1,
+    "highlight_contains": "ספק שהוא צריך לחלל",
+    "origin": "prior-regression",
+    "difficulty": 3
+  },
+  {
+    "tier": 3,
+    "question": "האם אפשר להכין פעולה לפני כניסת שבת והיא תימשך מאליה בתוך השבת?",
+    "section": "שבת",
+    "chapter": 3,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 3
+  },
+  {
+    "tier": 3,
+    "question": "יצאתי לטיול ואכלתי בדרך, צריך לחזור למקום האכילה בשביל ברכת המזון?",
+    "section": "ברכות",
+    "chapter": 4,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 3
+  },
+  {
+    "tier": 3,
+    "question": "יש לי סוכה בגובה 21 אמות, היכן הרמבם מסביר את הגובה המקסימלי?",
+    "section": "שופר וסוכה ולולב",
+    "chapter": 4,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 3
+  },
+  {
+    "tier": 3,
+    "question": "איבדתי כיוון ואני רוצה לדעת איזה צד צריך להניח עליו תפילין בראש, על המצח או למעלה?",
+    "section": "תפילין ומזוזה וספר תורה",
+    "chapter": 4,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 3
+  },
+  {
+    "tier": 3,
+    "question": "אם מישהו לקח רכוש מחברו בלי רשות, מה המקור לכך שחייב להחזיר את הגזלה?",
+    "section": "גזילה ואבידה",
+    "chapter": 1,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 3
+  },
+  {
+    "tier": 3,
+    "question": "אני רוצה לברר אם הבחירה לעשות טוב או רע תלויה באדם עצמו, איפה הרמבם מסביר?",
+    "section": "תשובה",
+    "chapter": 5,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 3
+  },
+  {
+    "tier": 3,
+    "question": "איזה מקור מלמד שחברים וסביבה משפיעים על התנהגותו של האדם?",
+    "section": "דעות",
+    "chapter": 6,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 3
+  },
+  {
+    "tier": 3,
+    "question": "מה צריך לעשות כשמגיעה צרה לציבור, האם יש מצווה להתפלל ולהריע?",
+    "section": "תעניות",
+    "chapter": 1,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 3
+  },
+  {
+    "tier": 1,
+    "question": "איפה נקבע מקום המזבח בבית המקדש והאם מזיזים אותו?",
+    "section": "בית הבחירה",
+    "chapter": 2,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 1
+  },
+  {
+    "tier": 2,
+    "question": "מה קורה לגזלה שלא השתנתה גם כשהבעלים כבר התייאשו?",
+    "section": "גזילה ואבידה",
+    "chapter": 2,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 2
+  },
+  {
+    "tier": 1,
+    "question": "כיצד מכינים את הקטורת ואיזה סממנים יש בה?",
+    "section": "כלי המקדש והעובדין בו",
+    "chapter": 2,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 1
+  },
+  {
+    "tier": 1,
+    "question": "מי רשאי לעשות ברית מילה והאם חייבים להשתמש בסכין?",
+    "section": "מילה",
+    "chapter": 2,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 1
+  },
+  {
+    "tier": 1,
+    "question": "האם מותר לשבת על כיסאו של המלך או לרכוב על סוסו?",
+    "section": "מלכים ומלחמות",
+    "chapter": 2,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 1
+  },
+  {
+    "tier": 1,
+    "question": "איך נקראים היין והסולת שמביאים עם קרבן?",
+    "section": "מעשה הקרבנות",
+    "chapter": 2,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 1
+  },
+  {
+    "tier": 2,
+    "question": "מה ההבדל בין דרישות וחקירות של העדים לבין בדיקות?",
+    "section": "עדות",
+    "chapter": 2,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 2
+  },
+  {
+    "tier": 2,
+    "question": "אם נתנו רק מתנת דם אחת על מזבח החיצון האם כיפר?",
+    "section": "פסולי המוקדשין",
+    "chapter": 2,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 2
+  },
+  {
+    "tier": 1,
+    "question": "כמה אנשים צריכים כדי להעיד על קידוש החודש?",
+    "section": "קידוש החודש",
+    "chapter": 2,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 1
+  },
+  {
+    "tier": 1,
+    "question": "מה דין מי שהרג את חברו בידיו בחרב או בחניקה?",
+    "section": "רוצח ושמירת נפש",
+    "chapter": 2,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 1
+  },
+  {
+    "tier": 2,
+    "question": "מי שענה אמן על שבועה שהשביע אותו אדם אחר האם חייב?",
+    "section": "שבועות",
+    "chapter": 2,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 2
+  },
+  {
+    "tier": 1,
+    "question": "האם מותר לשחוט בהמת חולין בעזרה של המקדש?",
+    "section": "שחיטה",
+    "chapter": 2,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 1
+  },
+  {
+    "tier": 1,
+    "question": "האם אדם שאינו יהודי יכול להיות שליח עבור ישראל?",
+    "section": "שלוחין ושותפין",
+    "chapter": 2,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 1
+  },
+  {
+    "tier": 1,
+    "question": "האם בכל עיר צריכים להעמיד מלמדי תינוקות ללמוד תורה?",
+    "section": "תלמוד תורה",
+    "chapter": 2,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 1
+  },
+  {
+    "tier": 2,
+    "question": "אילו מיני אוכל וגידולי קרקע חייבים בהפרשת תרומה לכהן?",
+    "section": "תרומות",
+    "chapter": 2,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 2
+  },
+  {
+    "tier": 2,
+    "question": "מי שמזיק לחברו בחבלה גופנית האם חייב לשלם על נזק צער ריפוי שבת ובושת?",
+    "section": "חובל ומזיק",
+    "chapter": 1,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 2
+  },
+  {
+    "tier": 2,
+    "question": "אם אני מתכוון להתפלל שחרית לפני הנץ החמה מתי הזמן?",
+    "section": "תפילה וברכת כהנים",
+    "chapter": 3,
+    "law": 1,
+    "origin": "prior-regression",
+    "difficulty": 2
+  },
+  {
+    "tier": 3,
+    "question": "מה מלמד הרמב״ם על מציאותו של המצוי הראשון שממנו כל המציאות?",
+    "section": "יסודי התורה",
+    "chapter": 1,
+    "law": 1,
+    "highlight_contains": "מצוי ראשון",
+    "origin": "prior-regression",
+    "difficulty": 3
+  },
+  {
+    "tier": 3,
+    "question": "מהו איסור גניבת כסף בשווי פרוטה ומעלה?",
+    "section": "גניבה",
+    "chapter": 1,
+    "law": 1,
+    "highlight_contains": "הגונב ממון",
+    "origin": "prior-regression",
+    "difficulty": 3
+  },
+  {
+    "tier": 3,
+    "question": "איך יודעים איזה בעלי חיים מותרים באכילה לפי סימנים?",
+    "section": "מאכלות אסורות",
+    "chapter": 1,
+    "law": 1,
+    "highlight_contains": "הסימנין",
+    "origin": "prior-regression",
+    "difficulty": 3
+  },
+  {
+    "tier": 3,
+    "question": "אילו שבעה מיני כלים מקבלים טומאה מן התורה?",
+    "section": "כלים",
+    "chapter": 1,
+    "law": 1,
+    "highlight_contains": "שבעה מיני כלים",
+    "origin": "prior-regression",
+    "difficulty": 3
+  },
+  {
+    "tier": 3,
+    "question": "איך נטהרים אנשים וכלים מטומאה, האם נדרשת טבילה במקוה?",
+    "section": "מקואות",
+    "chapter": 1,
+    "law": 1,
+    "highlight_contains": "טבילה",
+    "origin": "prior-regression",
+    "difficulty": 3
+  },
+  {
+    "tier": 3,
+    "question": "האם יש מצוות עשה להלוות כסף לעניים?",
+    "section": "מלווה ולווה",
+    "chapter": 1,
+    "law": 1,
+    "highlight_contains": "להלוות לעניי ישראל",
+    "origin": "prior-regression",
+    "difficulty": 3
+  },
+  {
+    "tier": 3,
+    "question": "מה מפרישים מן התבואה אחרי הפרשת תרומה גדולה?",
+    "section": "מעשרות",
+    "chapter": 1,
+    "law": 1,
+    "highlight_contains": "מעשר ראשון",
+    "origin": "prior-regression",
+    "difficulty": 3
+  },
+  {
+    "tier": 3,
+    "question": "מי חייב לשלם כאשר בהמה ששייכת לו מזיקה לרכוש אחר?",
+    "section": "נזקי ממון",
+    "chapter": 1,
+    "law": 1,
+    "highlight_contains": "",
+    "origin": "prior-regression",
+    "difficulty": 3
+  },
+  {
+    "tier": 3,
+    "question": "מהו הדין לגבי טלטול בחצר משותפת של כמה שכנים?",
+    "section": "עירובין",
+    "chapter": 1,
+    "law": 1,
+    "highlight_contains": "",
+    "origin": "prior-regression",
+    "difficulty": 3
+  },
+  {
+    "tier": 3,
+    "question": "מה דין עשיית מלאכה ביום הכיפורים בעשור לחודש השביעי?",
+    "section": "שביתת עשור",
+    "chapter": 1,
+    "law": 1,
+    "highlight_contains": "",
+    "origin": "prior-regression",
+    "difficulty": 3
+  },
+  {
+    "tier": 3,
+    "question": "אילו שלוש מצוות נצטוו ישראל לעשות בכל אחד משלושת הרגלים?",
+    "section": "חגיגה",
+    "chapter": 1,
+    "law": 1,
+    "highlight_contains": "שלש מצות",
+    "origin": "prior-regression",
+    "difficulty": 3
+  },
+  {
+    "tier": 3,
+    "question": "לאילו סוגים מחלק הרמב״ם את הנדרים שאדם נודר?",
+    "section": "נדרים",
+    "chapter": 1,
+    "law": 1,
+    "highlight_contains": "הנדר נחלק",
+    "origin": "prior-regression",
+    "difficulty": 3
+  },
+  {
+    "tier": 3,
+    "question": "מה עונשו של מי שהמיר בהמה שהקדיש בבהמה אחרת?",
+    "section": "תמורה",
+    "chapter": 1,
+    "law": 1,
+    "highlight_contains": "הממיר לוקה",
+    "origin": "prior-regression",
+    "difficulty": 3
+  },
+  {
+    "tier": 3,
+    "difficulty": 3,
+    "question": "שכחתי לקרוא קריאת שמע ונגמר הזמן של קריאת שמע בבוקר, מה עלי לעשות?",
+    "section": "קריאת שמע",
+    "chapter": 1,
+    "law": 13,
+    "highlight_contains": "לא יצא ידי חובת קריאת שמע",
+    "origin": "new-natural-paraphrase"
+  },
+  {
+    "tier": 3,
+    "difficulty": 3,
+    "question": "יצאתי לקרוא שמע רק אחרי שכבר חלפו שלוש שעות מהבוקר, האם זה עדיין בזמנו?",
+    "section": "קריאת שמע",
+    "chapter": 1,
+    "law": 13,
+    "highlight_contains": "לא יצא ידי חובת קריאת שמע",
+    "origin": "new-natural-paraphrase"
+  },
+  {
+    "tier": 3,
+    "difficulty": 3,
+    "question": "הספקתי לומר שמע אחרי הזריחה אבל לפני שנגמרו שלוש שעות, מה נחשב?",
+    "section": "קריאת שמע",
+    "chapter": 1,
+    "law": 11,
+    "highlight_contains": "עונתה עד סוף שלש שעות",
+    "origin": "new-natural-paraphrase"
+  },
+  {
+    "tier": 3,
+    "difficulty": 3,
+    "question": "הייתי מוכרח לצאת לדרך ממש מוקדם; האם מותר להקדים את שמע של הבוקר?",
+    "section": "קריאת שמע",
+    "chapter": 1,
+    "law": 12,
+    "highlight_contains": "בשעת הדחק",
+    "origin": "new-natural-paraphrase"
+  },
+  {
+    "tier": 3,
+    "difficulty": 3,
+    "question": "קראתי שמע בלילה מאוחר מאוד אך עוד לא הגיע עמוד השחר, האם יצאתי?",
+    "section": "קריאת שמע",
+    "chapter": 1,
+    "law": 9,
+    "highlight_contains": "עד שלא עלה עמוד השחר",
+    "origin": "new-natural-paraphrase"
+  },
+  {
+    "tier": 3,
+    "difficulty": 3,
+    "question": "אמרתי שמע ישראל בפסוק הראשון אבל הראש היה במקום אחר; האם צריך לחזור?",
+    "section": "קריאת שמע",
+    "chapter": 2,
+    "law": 1,
+    "highlight_contains": "",
+    "origin": "new-natural-paraphrase"
+  },
+  {
+    "tier": 3,
+    "difficulty": 3,
+    "question": "התבלבלתי בברכת המזון של ראש חודש, שכחתי להזכיר את היום. איפה הרמב״ם מדבר על זה?",
+    "section": "ברכות",
+    "chapter": 2,
+    "law": 13,
+    "highlight_contains": "",
+    "origin": "new-natural-paraphrase"
+  },
+  {
+    "tier": 3,
+    "difficulty": 3,
+    "question": "אכלתי סעודה בשבת ושכחתי את ההזכרה המיוחדת בברכת המזון; האם צריך לתקן?",
+    "section": "ברכות",
+    "chapter": 2,
+    "law": 12,
+    "highlight_contains": "",
+    "origin": "new-natural-paraphrase"
+  },
+  {
+    "tier": 3,
+    "difficulty": 3,
+    "question": "לפני קידוש של שבת בלילה כבר הייתי רעב; האם מותר להתחיל לאכול?",
+    "section": "שבת",
+    "chapter": 29,
+    "law": 5,
+    "highlight_contains": "",
+    "origin": "new-natural-paraphrase"
+  },
+  {
+    "tier": 3,
+    "difficulty": 3,
+    "question": "יש חשש סכנה לחולה בשבת ולא יודעים בוודאות; האם מותר לחלל שבת עבורו?",
+    "section": "שבת",
+    "chapter": 2,
+    "law": 1,
+    "highlight_contains": "",
+    "origin": "new-natural-paraphrase"
+  },
+  {
+    "tier": 3,
+    "difficulty": 3,
+    "question": "התחלתי מלאכה ביום שישי והיא ממשיכה מעצמה לאחר כניסת שבת; איפה המקור?",
+    "section": "שבת",
+    "chapter": 3,
+    "law": 1,
+    "highlight_contains": "",
+    "origin": "new-natural-paraphrase"
+  },
+  {
+    "tier": 3,
+    "difficulty": 3,
+    "question": "בנינו סוכה שהחלל שלה עולה על עשרים אמה; מה אומר הרמב״ם על הכשרות?",
+    "section": "שופר וסוכה ולולב",
+    "chapter": 4,
+    "law": 1,
+    "highlight_contains": "",
+    "origin": "new-natural-paraphrase"
+  },
+  {
+    "tier": 3,
+    "difficulty": 3,
+    "question": "האם כל דבר שגדל מן הקרקע יכול לשמש כסכך או שיש תנאים מיוחדים?",
+    "section": "שופר וסוכה ולולב",
+    "chapter": 5,
+    "law": 1,
+    "highlight_contains": "",
+    "origin": "new-natural-paraphrase"
+  },
+  {
+    "tier": 3,
+    "difficulty": 3,
+    "question": "כשאני אוכל בזמן נסיעה, באיזה מקום אמורה להיאמר ברכת המזון?",
+    "section": "ברכות",
+    "chapter": 4,
+    "law": 1,
+    "highlight_contains": "",
+    "origin": "new-natural-paraphrase"
+  },
+  {
+    "tier": 3,
+    "difficulty": 3,
+    "question": "המורה שלי לתורה ואבי זקוקים לעזרה; מה מלמד הרמב״ם על כבוד הרב?",
+    "section": "תלמוד תורה",
+    "chapter": 5,
+    "law": 1,
+    "highlight_contains": "",
+    "origin": "new-natural-paraphrase"
+  },
+  {
+    "tier": 3,
+    "difficulty": 3,
+    "question": "האם באמת נתונה לאדם האפשרות לבחור בין לעשות טוב ובין לעשות רע?",
+    "section": "תשובה",
+    "chapter": 5,
+    "law": 1,
+    "highlight_contains": "",
+    "origin": "new-natural-paraphrase"
+  },
+  {
+    "tier": 3,
+    "difficulty": 3,
+    "question": "נגזל חפץ שלא השתנה, אבל בעליו כבר התייאש; מהו מקור הדין?",
+    "section": "גזילה ואבידה",
+    "chapter": 2,
+    "law": 1,
+    "highlight_contains": "",
+    "origin": "new-natural-paraphrase"
+  },
+  {
+    "tier": 3,
+    "difficulty": 3,
+    "question": "אני מושפע מאוד מהחברים שלי ומהסביבה, האם הרמב״ם מתייחס לכך?",
+    "section": "דעות",
+    "chapter": 6,
+    "law": 1,
+    "highlight_contains": "",
+    "origin": "new-natural-paraphrase"
+  },
+  {
+    "tier": 3,
+    "difficulty": 3,
+    "question": "כמה דיירים חולקים חצר, ורוצים לטלטל דברים מבית לחצר, מהו המקור לכך?",
+    "section": "עירובין",
+    "chapter": 1,
+    "law": 1,
+    "highlight_contains": "",
+    "origin": "new-natural-paraphrase"
+  },
+  {
+    "tier": 3,
+    "difficulty": 3,
+    "question": "מישהו קרא מגילת אסתר בדילוגים וחזר לפסוקים מוקדמים; האם קריאה כזאת מועילה?",
+    "section": "מגילה וחנוכה",
+    "chapter": 2,
+    "law": 1,
+    "highlight_contains": "",
+    "origin": "new-natural-paraphrase"
+  }
+]
