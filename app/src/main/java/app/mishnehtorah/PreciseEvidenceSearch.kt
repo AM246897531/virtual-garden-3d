@@ -422,6 +422,28 @@ internal class PreciseEvidenceSearch(
         }
     }
 
+    /** Do not silently erase "לא", "בלי", or "אינו" from the user's legal
+     * condition. Prefer passages where negation is close to the same
+     * relevant concepts, never where it appears incidentally far away. */
+    private fun negationEvidence(analysis: SearchLanguage.Analysis,
+                                 passage: String,
+                                 aliases: Map<String, Int>): Float {
+        if (!analysis.hasNegation || aliases.isEmpty()) return 0f
+        val tokens=passage.split(' ')
+        val negatives=setOf("לא","אין","אינו","אינה","איננ","בלי",
+            "ללא","שלא","פטור","אסור")
+        for (i in tokens.indices) {
+            if (tokens[i] !in negatives) continue
+            for (j in maxOf(0,i-7)..minOf(tokens.lastIndex,i+7)) {
+                val token=tokens[j]
+                val mask=(aliases[token] ?: 0) or
+                    (aliases[SearchLanguage.stem(token)] ?: 0)
+                if (mask!=0) return 12f
+            }
+        }
+        return 0f
+    }
+
     private data class Evidence(val score: Float, val matched: Int, val coverage: Float)
 
     private fun evidence(analysis: SearchLanguage.Analysis,
@@ -467,11 +489,13 @@ internal class PreciseEvidenceSearch(
             }
         }
         val leadScore = if (total > 0f) 20f * (leadCovered / total) else 0f
+        val aliasLookup=precomputedAliases ?: proximityAliases(analysis)
         val score=coverage*110f+matched*2.5f+minOf(7f,directPhrases*3f)+permissionEvidence+
             SearchLanguage.intentBoost(analysis.intent,passage)*.85f+quantityEvidence(analysis,words)+
             secCoverage*6f+max(0f,semanticScore)*12f+leadScore+
-            proximityEvidence(analysis, words,
-                precomputedAliases ?: proximityAliases(analysis))+expiredDeadlineEvidence(analysis,passage)-shortness
+            proximityEvidence(analysis, words,aliasLookup)+
+            negationEvidence(analysis,passage,aliasLookup)+
+            expiredDeadlineEvidence(analysis,passage)-shortness
         return Evidence(score,matched,coverage)
     }
 
