@@ -74,12 +74,23 @@ jobs:
           if [ -f artifacts/screenshots/01-home.png ]; then echo "Emulator screenshot capture executed; examine PNGs and logcat for runtime verification." >> artifacts/delivery/BUILD_AND_TEST_REPORT.md; else echo "No emulator screenshots captured: runtime remains unverified." >> artifacts/delivery/BUILD_AND_TEST_REPORT.md; fi
           (cd artifacts && zip -q -r delivery/Rambam-Licensed-Raw-Corpus.zip raw-corpus)
           (cd artifacts/delivery && sha256sum * > SHA256SUMS.txt)
+      - name: Preserve installable QA APK and individual failures when accuracy gate fails
+        if: failure()
+        run: |
+          mkdir -p artifacts/qa-failed
+          if [ -f app/build/outputs/apk/debug/app-debug.apk ]; then cp app/build/outputs/apk/debug/app-debug.apk artifacts/qa-failed/UNVERIFIED-QA-FAILED.apk; fi
+          if [ -f artifacts/screenshots/quality-110-log.txt ]; then
+            cp artifacts/screenshots/quality-110-log.txt artifacts/qa-failed/quality-110-log.txt
+            grep 'Q110_CASE .* FAIL' artifacts/screenshots/quality-110-log.txt > artifacts/qa-failed/failed-cases.txt || true
+          fi
+          printf 'NOT A RELEASE. Android accuracy/highlighting gate did not pass. Inspect failed-cases.txt and the full log before any release.\n' > artifacts/qa-failed/README.txt
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: Mishneh-Torah-Build-Results
           path: |
             artifacts/delivery/
+            artifacts/qa-failed/
             artifacts/screenshots/
             artifacts/corpus_report.json
             artifacts/SOURCE_MANIFEST.json
