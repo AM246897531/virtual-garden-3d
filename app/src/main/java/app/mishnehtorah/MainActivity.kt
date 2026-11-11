@@ -41,10 +41,15 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-private val Paper = Color(0xFFF6F7FA)
-private val Ink = Color(0xFF1D273B)
-private val Accent = Color(0xFF316BDF)
-private val DarkPaper = Color(0xFF111720)
+// The brand palette is shared by every screen; retrieval engine is unchanged.
+private val Paper = Color(0xFFFFFFFF)
+private val Cream = Color(0xFFF4E9D5)
+private val Ink = Color(0xFF252420)
+private val Accent = Color(0xFF936D34) // Contrast-safe antique gold for small text.
+private val AntiqueGold = Color(0xFFB38C4F)
+private val Turquoise = Color(0xFFBCEBE4)
+private val TealInk = Color(0xFF217B70)
+private val DarkPaper = Color(0xFF211D18)
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -205,11 +210,15 @@ fun RambamApp(initialQuery: String = "", debugTypeahead: Boolean = false, debugQ
         sourceQuestion = if (fromSearch) submittedQuery else ""
     }
     val scheme = if (dark) darkColorScheme(
-        primary = Color(0xFF96B7FF), background = DarkPaper,
-        surface = Color(0xFF1C2634), onBackground = Color.White)
+        primary = Color(0xFFE3C18B), secondary = Color(0xFF91DAD0),
+        tertiary = AntiqueGold, background = DarkPaper,
+        surface = Color(0xFF352D23), surfaceVariant = Color(0xFF44382A),
+        onBackground = Color(0xFFF9F1E4), onSurface = Color(0xFFF9F1E4),
+        outline = Color(0xFF806B4E))
     else lightColorScheme(
-        primary = Accent, background = Paper, surface = Color.White,
-        onBackground = Ink, onSurface = Ink)
+        primary = Accent, secondary = TealInk, tertiary = AntiqueGold,
+        background = Paper, surface = Color(0xFFFFFAF1), surfaceVariant = Cream,
+        onBackground = Ink, onSurface = Ink, outline = Color(0xFFD3BD99))
 
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
         MaterialTheme(colorScheme = scheme) {
@@ -241,11 +250,11 @@ fun RambamApp(initialQuery: String = "", debugTypeahead: Boolean = false, debugQ
                                             modifier = Modifier
                                                 .size(48.dp)
                                                 .clip(RoundedCornerShape(18.dp))
-                                                .background(if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f) else Color.Transparent)
+                                                .background(if (selected) MaterialTheme.colorScheme.secondary.copy(alpha = 0.16f) else Color.Transparent)
                                         ) {
                                             Icon(icon, contentDescription = label,
-                                                tint = if (selected) MaterialTheme.colorScheme.primary
-                                                else MaterialTheme.colorScheme.onSurface.copy(alpha = .65f))
+                                                tint = if (selected) MaterialTheme.colorScheme.secondary
+                                                else MaterialTheme.colorScheme.primary.copy(alpha = .85f))
                                         }
                                     }
                                 }
@@ -342,7 +351,7 @@ private fun SearchPage(
 ) {
     Column(Modifier.fillMaxSize().padding(horizontal = 22.dp)) {
         Spacer(Modifier.height(34.dp))
-        PageHeading("משנה תורה", "הרמב״ם — חיפוש סמנטי עברי, ללא אינטרנט")
+        PageHeading("הלכות הרמב״ם", "משנה תורה — חיפוש עברי חכם, ללא אינטרנט")
         Spacer(Modifier.height(32.dp))
         OutlinedTextField(
             value = query, onValueChange = onQueryChange,
@@ -361,14 +370,19 @@ private fun SearchPage(
             modifier = Modifier.fillMaxWidth(),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedContainerColor = MaterialTheme.colorScheme.surface,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surface)
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                focusedBorderColor = MaterialTheme.colorScheme.secondary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                cursorColor = MaterialTheme.colorScheme.secondary,
+                focusedLeadingIconColor = MaterialTheme.colorScheme.tertiary,
+                unfocusedLeadingIconColor = MaterialTheme.colorScheme.tertiary)
         )
         Spacer(Modifier.height(24.dp))
         if (query.isBlank()) {
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
-                color = MaterialTheme.colorScheme.primary.copy(alpha = .065f)
+                color = MaterialTheme.colorScheme.surfaceVariant
             ) {
                 Column(Modifier.padding(22.dp)) {
                     Text("לימוד מתוך המקור", fontWeight = FontWeight.SemiBold,
@@ -415,7 +429,7 @@ private fun HighlightedRambamText(
     onLayout: ((TextLayoutResult) -> Unit)? = null
 ) {
     val highlightColor = if (MaterialTheme.colorScheme.background == DarkPaper)
-        Color(0xFF285C51) else Color(0xFFB8EFDF)
+        Color(0xFF285C51) else Turquoise
     val marked = remember(text, range, highlightColor) {
         buildAnnotatedString {
             append(text)
