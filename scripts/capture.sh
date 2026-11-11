@@ -4,6 +4,13 @@ APK="app/build/outputs/apk/debug/app-debug.apk"
 PKG="app.mishnehtorah"
 OUT="artifacts/screenshots"
 mkdir -p "$OUT"
+# Disable the unstable emulator launcher before launching our standalone app.
+# A Pixel Launcher ANR can obscure screenshots even when the target app works.
+adb shell am force-stop com.google.android.apps.nexuslauncher || true
+adb shell pm disable-user --user 0 com.google.android.apps.nexuslauncher || true
+adb shell am force-stop com.android.launcher3 || true
+adb shell pm disable-user --user 0 com.android.launcher3 || true
+adb shell input keyevent 4 || true
 adb install -r "$APK"
 adb shell am start -n "$PKG/.MainActivity"
 sleep 14
@@ -15,10 +22,12 @@ screenshot() {
 }
 start_query() {
   adb shell am force-stop "$PKG"
-  adb shell am start -n "$PKG/.MainActivity" --es debug_query "$1"
+  adb shell "am start -n $PKG/.MainActivity --es debug_query '$1'"
   sleep 6
   adb shell pidof "$PKG" > /dev/null
 }
+adb shell input keyevent 4 || true
+sleep 2
 screenshot 01-home
 S=$(adb shell wm size | tr -d '\r' | grep -oE '[0-9]+x[0-9]+' | tail -1)
 W=$(echo "$S" | cut -dx -f1); H=$(echo "$S" | cut -dx -f2)
@@ -54,7 +63,7 @@ tap $((W*38/100)) $((H-95))
 screenshot 12-bookmarks
 tap $((W*15/100)) $((H-95))
 screenshot 13-settings
-tap $((W*78/100)) $((H*36/100))
+tap $((W*78/100)) $((H*24/100))
 screenshot 14-dark-mode
 adb shell settings put global airplane_mode_on 1
 adb shell am broadcast -a android.intent.action.AIRPLANE_MODE --ez state true >/dev/null || true
