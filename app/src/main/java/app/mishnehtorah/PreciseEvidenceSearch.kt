@@ -137,6 +137,12 @@ internal class PreciseEvidenceSearch(
         }.sortedByDescending { it.third }.take(limit)
             .map { it.first to it.second }.toList()
     }
+    private fun chapterRoutingQuery(analysis: SearchLanguage.Analysis): String =
+        analysis.terms.take(12).joinToString(" ") { term ->
+            (listOf(term.word)+term.alternatives.filter { it!=term.word }.take(2))
+                .distinct().joinToString(" ")
+        }
+
     private fun addChapterPassages(query: String, output: MutableSet<Int>) {
         // Only source-derived chapter candidates, never a test question -> law map.
         for ((section,chapter) in chapterContextCandidates(query)) {
@@ -167,7 +173,7 @@ internal class PreciseEvidenceSearch(
         }
         if (groups.size>=2 && out.size<10000)
             ftsIds(groups.take(6).joinToString(" OR "),1800,out)
-        addChapterPassages(analysis.normalized,out)
+        addChapterPassages(chapterRoutingQuery(analysis),out)
         return out
     }
 
@@ -429,7 +435,7 @@ internal class PreciseEvidenceSearch(
         // The opening of each chapter is an actual Rambam source passage.
         // Its similarity helps disambiguate a specific chapter, but it can
         // never independently supply or fabricate a halakhic answer.
-        val chapterBonuses=chapterContextCandidates(analysis.normalized,45)
+        val chapterBonuses=chapterContextCandidates(chapterRoutingQuery(analysis),45)
             .mapIndexed { rank,part ->
                 part to (if (rank<7) 29f-rank*2f
                     else 17f/(1f+(rank-6)*.13f))
