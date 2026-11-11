@@ -158,7 +158,7 @@ class CorpusStore private constructor(
             size > 96
     }
 
-    fun relevantPassage(law: Law, question: String): PassageMatch? {
+    internal fun relevantPassage(law: Law, question: String): PassageMatch? {
         if (question.isBlank()) return null
         val key = "${law.id}:$question"
         synchronized(highlightCache) {

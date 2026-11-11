@@ -65,9 +65,9 @@ screenshot 03-birkat-hamazon-query
 tap $((W/2)) $((H*43/100))
 screenshot 04-opened-search-result
 tap $((W*8/100)) $((H*7/100))
-start_query "מה הדין אדם ששכח להזכיר ראש חודש" "הלכות ברכות"
+start_query "מה הדין אדם ששכח להזכיר ראש חודש"
 screenshot 05-paraphrase-query
-start_query "ר״ח ברכה חוזר" "הלכות ברכות"
+start_query "ר״ח ברכה חוזר"
 screenshot 06-abbreviation-query
 # Test real question intent extraction + full source law on the Android runtime.
 start_query "כמה פעמים קוראים קריאת שמע ביום" "פרק 1 · הלכה 1"
