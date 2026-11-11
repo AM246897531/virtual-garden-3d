@@ -24,6 +24,8 @@ def encode(session,tokenizer,texts,batch_size=12):
         blk=texts[start:start+batch_size]
         tokens=tokenizer(blk,padding=True,truncation=True,max_length=128,return_tensors='np')
         feed={k:np.asarray(v,dtype=np.int64) for k,v in tokens.items() if k in names}
+        if 'token_type_ids' in names and 'token_type_ids' not in feed:
+            feed['token_type_ids']=np.zeros_like(feed['input_ids'],dtype=np.int64)
         arr=session.run(None,feed)[0].astype(np.float32)
         mask=feed['attention_mask'][...,None]
         mean=(arr*mask).sum(axis=1)/np.maximum(mask.sum(axis=1),1)
