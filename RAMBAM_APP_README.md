@@ -49,3 +49,8 @@ This is local *retrieval*, not a generative rabbinical model. The source text sh
 - Real Android emulator tests now execute `scripts/quality_50.json` through the same `CorpusStore.search()` and `relevantPassage()` used by the UI. The 50 questions include direct, paraphrased and moderately compound queries. An independent exact book/chapter/law expected answer is declared for each. **The workflow must fail unless all 50 return the expected top reference and all 50 locate a non-empty passage**. This is a curated regression sample, not evidence that all possible halakhic questions are answered correctly.
 - Search work has been reduced: prefix-FTS now fetches candidate row IDs first, law texts are loaded once in batches, and nearest-semantic retrieval maintains a bounded top-K heap instead of sorting all 15,063 laws. Typing debounce changed from 650 ms to 380 ms. The test log reports median and P95 retrieval latency on the emulator (not network or first-install time).
 - The model is **not a generative LLM**; its only output is source retrieval. The developer should not claim it constructs autonomous halakhic rulings.
+
+## v0.4.1 — evidence highlight refinement
+- Definitional headings and short questions in the Rambam now highlight their accompanying answer, not only the title.
+- The 50-question emulator suite additionally checks five representative answer-bearing fragments inside highlights.
+- A question about uncertain danger on Shabbat targets the specific doubt clause, and Megillah obligation targets the obligation sentence.

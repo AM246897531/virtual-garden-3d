@@ -89,6 +89,18 @@ internal object RelevantPassage {
         }
         if (winner < 0 || !supported) return null
         val range = pieces[winner]
-        return PassageMatch(range.first, range.last + 1, highest)
+        val lead = HebrewSearch.normalize(texts[winner])
+        // The Rambam often opens a law with a very short question or
+        // heading, immediately followed by the answer. Highlighting only
+        // the heading would be misleading even when the reference is right.
+        val heading = (lead.length < 90 && (
+            lead.startsWith("כמה ") || lead.startsWith("אי זו ") ||
+            lead.startsWith("סדר ") || lead.startsWith("כיצד ") ||
+            texts[winner].trimEnd().endsWith(":")
+        ))
+        val next = pieces.getOrNull(winner + 1)
+        val end = if (heading && next != null && next.first <= range.last + 2)
+            next.last + 1 else range.last + 1
+        return PassageMatch(range.first, end, highest)
     }
 }

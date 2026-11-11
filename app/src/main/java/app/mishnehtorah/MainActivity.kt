@@ -134,7 +134,12 @@ fun RambamApp(initialQuery: String = "", debugTypeahead: Boolean = false, debugQ
                             top.chapter == expectedChapter && top.number == expectedLaw
                         if (accurate) passed++
                         val passage = if (top != null) engine.relevantPassage(top, question) else null
-                        if (passage != null && passage.end > passage.start) highlighted++
+                        val required = item.optString("highlight_contains", "")
+                        val passageValid = passage != null && top != null &&
+                            passage.end > passage.start && (required.isBlank() ||
+                                HebrewSearch.normalize(top.text.substring(passage.start, passage.end))
+                                    .contains(HebrewSearch.normalize(required)))
+                        if (passageValid) highlighted++
                         val excerpt = if (passage != null && top != null)
                             top.text.substring(passage.start, passage.end)
                                 .replace('\n', ' ').take(130) else "none"
@@ -142,7 +147,7 @@ fun RambamApp(initialQuery: String = "", debugTypeahead: Boolean = false, debugQ
                             "${if (accurate) "PASS" else "FAIL"} tier=${item.getInt("tier")} " +
                             "top=${top?.reference ?: "none"} " +
                             "expected=$section/$expectedChapter/$expectedLaw " +
-                            "passage=${passage != null} elapsed_ms=${timings.last()} " +
+                            "passage=$passageValid elapsed_ms=${timings.last()} " +
                             "excerpt=$excerpt")
                     }
                     val sorted = timings.sorted()
