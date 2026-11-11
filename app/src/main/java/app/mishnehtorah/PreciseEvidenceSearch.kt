@@ -710,6 +710,11 @@ internal class PreciseEvidenceSearch(
         for (bridge in SearchLanguage.sourceVocabularyBridges(query)) {
             val expansion=SearchLanguage.analyze(bridge)
             tokenWindowEvidence(text,expansion,start,end,confidence)?.let { return it }
+            // For a multi-passage law the ranked passage can omit the
+            // explanation. Search the SAME authentic law as a fallback;
+            // no generated prose or neighboring law may be highlighted.
+            if (end-start<text.length && text.length<=5000)
+                tokenWindowEvidence(text,expansion,0,text.length,confidence)?.let { return it }
         }
         grammaticalAnswerClause(text, query, confidence)?.let { return it }
         val analysis=SearchLanguage.analyze(query)
