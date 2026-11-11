@@ -283,17 +283,28 @@ internal class PreciseEvidenceSearch(
             "ארבע","חמש","שש","שבע","שמונה","תשע","עשר","עשרימ","שלשימ",
             "פעמימ","שתי","שתיי","מאות","אלפימ")
         val positions=words.indices.filter { words[it] in numbers ||
-            (words[it].matches(Regex("[0-9]+"))) }
+            (words[it].length<=4 && words[it].all { digit -> digit.isDigit() }) }
         if (positions.isEmpty()) return 0f
-        // A numeral unrelated to the concept being counted is weak evidence:
-        // 'two blessings' must not beat 'twice saying Shema'.
-        val concepts=analysis.terms.filter { it.word !in setOf("כמה", "מספר", "מנינ", "שיעור") }
-        for (idx in positions) {
-            val near=words.subList(maxOf(0,idx-4),minOf(words.size,idx+5))
-            if (concepts.any { it.word.length>=4 && termMatch(it,near)>=.84f })
-                return 22f
+        val questionWords=analysis.normalized.split(' ')
+        val howManyIndex=questionWords.indexOf("כמה")
+        // The measured noun immediately after "how many" must be near the
+        // source's number. Otherwise, "two blessings" wrongly beats the law
+        // about "twice reciting" solely because the subject is shared.
+        val measured=if (howManyIndex>=0) questionWords.getOrNull(howManyIndex+1) else null
+        val measuredTerm=analysis.terms.firstOrNull { term ->
+            measured!=null && (term.word==measured ||
+                SearchLanguage.stem(term.word)==SearchLanguage.stem(measured))
         }
-        return 1f
+        val concepts=analysis.terms.filter { it.word !in setOf("כמה","מספר","מנינ","שיעור") }
+        var subjectNearNumber=false
+        for (idx in positions) {
+            val near=words.subList(maxOf(0,idx-5),minOf(words.size,idx+6))
+            if (measuredTerm!=null && termMatch(measuredTerm,near)>=.80f)
+                return 38f
+            if (concepts.any { it.word.length>=4 && termMatch(it,near)>=.84f })
+                subjectNearNumber=true
+        }
+        return if (subjectNearNumber) 7f else 1f
     }
 
     /** Reward independent query concepts present in the SAME short evidence span.
