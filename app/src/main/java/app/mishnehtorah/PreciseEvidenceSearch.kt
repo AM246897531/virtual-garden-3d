@@ -453,6 +453,13 @@ internal class PreciseEvidenceSearch(
         val bridgeNearest=bridgeQueries.flatMap { bridge ->
             characterIndex?.nearest(bridge,240).orEmpty()
         }
+        // Sentence-level search defeats irrelevant introductions in long free-
+        // form questions. These hits are only raw candidates, not evidence
+        // scores and never known answers.
+        val segmentQueries=SearchLanguage.evidenceSegments(query)
+        val segmentNearest=segmentQueries.flatMap { segment ->
+            characterIndex?.nearest(segment,160).orEmpty()
+        }
         val bridgeLawIds=bridgeNearest.map { it.first }.toHashSet()
         val bridgeAnalyses=bridgeQueries.map { queryText ->
             val a=SearchLanguage.analyze(queryText)
@@ -464,6 +471,7 @@ internal class PreciseEvidenceSearch(
         addSemanticPassages(nearest,ids)
         addSemanticPassages(characterNearest,ids)
         addSemanticPassages(bridgeNearest,ids)
+        addSemanticPassages(segmentNearest,ids)
         val passages=loadPassages(ids)
         if (passages.isEmpty()) return emptyList()
         val lawSections=HashMap<Int,String>()
@@ -550,7 +558,8 @@ internal class PreciseEvidenceSearch(
             .take(limit).toList()
         Log.i("RambamSearch", "PRECISION_SEARCH lexical_passages=$lexicalCount " +
             "semantic_laws=${nearest.size} char_laws=${characterNearest.size} " +
-            "bridged_laws=${bridgeLawIds.size} rescored=${passages.size} " +
+            "bridged_laws=${bridgeLawIds.size} segment_laws=${segmentNearest.size} " +
+            "rescored=${passages.size} " +
             "supported_laws=${accepted.size} returned=${sorted.size} " +
             "top=${sorted.firstOrNull()?.lawId ?: -1} " +
             "elapsed_ms=${android.os.SystemClock.elapsedRealtime()-started}")
