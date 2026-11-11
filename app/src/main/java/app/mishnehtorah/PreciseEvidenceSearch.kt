@@ -320,11 +320,9 @@ internal class PreciseEvidenceSearch(
 
     /** Reward independent query concepts present in the SAME short evidence span.
      * A paragraph with scattered vocabulary is not necessarily an answer. */
-    private fun proximityEvidence(analysis: SearchLanguage.Analysis, words: List<String>): Float {
-        if (analysis.terms.size < 2 || words.size < 3) return 0f
-        // A source-grounded short-window cohesion bonus. Reuse normalized
-        // exact aliases and conservative word stems instead of repeating
-        // expensive fuzzy comparisons for every token of every passage.
+    /** Precompute the question's morphological concept masks ONCE per search,
+     * rather than reconstructing them for each of thousands of source passages. */
+    private fun proximityAliases(analysis: SearchLanguage.Analysis): Map<String, Int> {
         val aliases = HashMap<String, Int>()
         for ((index, term) in analysis.terms.withIndex()) {
             val bit = 1 shl index
@@ -335,6 +333,14 @@ internal class PreciseEvidenceSearch(
                 if (stem.length >= 4) aliases[stem] = (aliases[stem] ?: 0) or bit
             }
         }
+        return aliases
+    }
+
+    /** Reward independent query concepts present in the SAME short evidence span.
+     * The aliases are prepared once and never learned from benchmark labels. */
+    private fun proximityEvidence(analysis: SearchLanguage.Analysis, words: List<String>,
+                                  aliases: Map<String, Int>): Float {
+        if (analysis.terms.size < 2 || words.size < 3) return 0f
         val masks = IntArray(words.size) { i ->
             val w = words[i]
             (aliases[w] ?: 0) or (aliases[SearchLanguage.stem(w)] ?: 0)
@@ -375,7 +381,8 @@ internal class PreciseEvidenceSearch(
 
     private fun evidence(analysis: SearchLanguage.Analysis,
                          weights: FloatArray, passage: String, section: String,
-                         semanticScore: Float): Evidence {
+                         semanticScore: Float,
+                         precomputedAliases: Map<String, Int>? = null): Evidence {
         val words=passage.split(' ').filter { it.length>=3 }
         if (words.isEmpty()) return Evidence(-999f,0,0f)
         var covered=0f;var matched=0;var sectionCovered=0f;var total=0f
@@ -411,7 +418,8 @@ internal class PreciseEvidenceSearch(
         val score=coverage*110f+matched*2.5f+minOf(7f,directPhrases*3f)+permissionEvidence+
             SearchLanguage.intentBoost(analysis.intent,passage)*.85f+quantityEvidence(analysis,words)+
             secCoverage*6f+max(0f,semanticScore)*12f+leadScore+
-            proximityEvidence(analysis, words)+expiredDeadlineEvidence(analysis,passage)-shortness
+            proximityEvidence(analysis, words,
+                precomputedAliases ?: proximityAliases(analysis))+expiredDeadlineEvidence(analysis,passage)-shortness
         return Evidence(score,matched,coverage)
     }
 
@@ -420,6 +428,7 @@ internal class PreciseEvidenceSearch(
         if (analysis.terms.isEmpty()) return emptyList()
         val started=android.os.SystemClock.elapsedRealtime()
         val weights=FloatArray(analysis.terms.size) { weight(analysis.terms[it]) }
+        val aliases=proximityAliases(analysis)
         val nearest=semantic.nearest(query,240)
         val semanticScores=nearest.toMap()
         val ids=candidateIds(analysis)
@@ -457,7 +466,8 @@ internal class PreciseEvidenceSearch(
         for (passage in passages) {
             val sec=lawSections[passage.lawId].orEmpty()
             val score=evidence(analysis,weights,passage.norm,
-                HebrewSearch.normalize(sec), semanticScores[passage.lawId]?:0f)
+                HebrewSearch.normalize(sec), semanticScores[passage.lawId]?:0f,
+                aliases)
             val needed=if (groupCount==1) 1 else 2
             // Penalize partial subject matches. For hard multi-concept queries
             // a passage that lacks the specific condition is not reliable.
