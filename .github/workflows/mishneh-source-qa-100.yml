@@ -20,9 +20,13 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install text corpus fetch dependency
-        run: python -m pip install requests==2.32.3
+        run: python -m pip install requests==2.32.3 'scikit-learn>=1.5,<2' 'numpy>=1.26,<3'
       - name: Rebuild original Mishneh Torah corpus - no Gradle or Android compilation
         run: python scripts/build_corpus.py
+      - name: Build 15MB offline source-only character-recall index
+        run: python scripts/build_char_trigram_index.py
+      - name: Verify character index binary and 100 natural-language source recall
+        run: python scripts/test_char_trigram_100.py
       - name: Confirm early-versus-late Hebrew time intent and unmodified evidence offsets
         run: python scripts/test_natural_query_semantics.py
       - name: Validate 100 question references and verbatim answer-anchor text
@@ -35,5 +39,6 @@ jobs:
           path: |
             artifacts/natural_100_gold_validation.json
             artifacts/corpus_report.json
+            artifacts/char3_report.json
           retention-days: 30
           if-no-files-found: warn
