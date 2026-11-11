@@ -320,6 +320,26 @@ internal class PreciseEvidenceSearch(
         return 13f * ratio * ratio
     }
 
+    /** Source-grounded temporal overrun evidence: a late question must favor
+     * the law discussing the consequence AFTER the time, not the introductory
+     * law merely defining the time. No book, chapter, or law IDs are encoded. */
+    private fun expiredDeadlineEvidence(analysis: SearchLanguage.Analysis,
+                                        passage: String): Float {
+        if (!analysis.deadlineOverrun) return 0f
+        val hasLate = passage.contains("אחר") || passage.contains("איחר") ||
+            passage.contains("עבר") || passage.contains("לאחר")
+        val hasBoundary = passage.contains("שעות") || passage.contains("שעה") ||
+            passage.contains("זמנ") || passage.contains("עונתו")
+        if (!hasLate || !hasBoundary) return 0f
+        val explicitNegative = passage.contains("לא יצא") ||
+            passage.contains("אינו יוצא") || passage.contains("לא יצא ידי")
+        return when {
+            explicitNegative -> 58f
+            passage.contains("יצא ידי") -> 18f
+            else -> 24f
+        }
+    }
+
     private data class Evidence(val score: Float, val matched: Int, val coverage: Float)
 
     private fun evidence(analysis: SearchLanguage.Analysis,
@@ -360,7 +380,7 @@ internal class PreciseEvidenceSearch(
         val score=coverage*110f+matched*2.5f+minOf(7f,directPhrases*3f)+permissionEvidence+
             SearchLanguage.intentBoost(analysis.intent,passage)*.85f+quantityEvidence(analysis,words)+
             secCoverage*6f+max(0f,semanticScore)*12f+leadScore+
-            proximityEvidence(analysis, words)-shortness
+            proximityEvidence(analysis, words)+expiredDeadlineEvidence(analysis,passage)-shortness
         return Evidence(score,matched,coverage)
     }
 
@@ -424,6 +444,34 @@ internal class PreciseEvidenceSearch(
      * These are Hebrew discourse patterns, never benchmark-specific sources.
      * Original UTF-16 offsets are preserved for exact highlighting.
      */
+    /** Return original UTF-16 offsets for the actual *late-time decision*.
+     * Tokenize in the verbatim source, so vowels and cantillation never break
+     * the highlighted range or require approximate reverse-normalization. */
+    private fun overdueDecisionSpan(text: String, question: String,
+                                    confidence: Float): PassageMatch? {
+        if (!SearchLanguage.analyze(question).deadlineOverrun) return null
+        val tokens = Regex("[\\p{L}\\p{M}]+").findAll(text).toList()
+        if (tokens.isEmpty()) return null
+        val words = tokens.map { HebrewSearch.normalize(it.value) }
+        for (i in words.indices) {
+            if (words[i] !in setOf("אחר","איחר","לאחר","עבר")) continue
+            val endWindow = minOf(words.size, i + 8)
+            val hasBoundary = words.subList(i,endWindow).any {
+                it == "שעות" || it == "שעה" || it == "זמנ" || it == "עונתו"
+            }
+            if (!hasBoundary) continue
+            val outcome = (i until minOf(words.size-1,i+32)).firstOrNull { j ->
+                (words[j] == "לא" && words[j+1] == "יצא") ||
+                (words[j] == "אינו" && words[j+1] == "יוצא")
+            } ?: continue
+            val start = tokens[maxOf(0,i-2)].range.first
+            val end = tokens[minOf(words.lastIndex,outcome+8)].range.last+1
+            if (end>start && end-start<=340)
+                return PassageMatch(start,end,confidence)
+        }
+        return null
+    }
+
     private fun grammaticalAnswerClause(text: String, question: String,
                                         confidence: Float): PassageMatch? {
         val normalizedQuestion = HebrewSearch.normalize(question)
@@ -491,6 +539,7 @@ internal class PreciseEvidenceSearch(
         // The index guarantees that this is a verbatim, original offset.
         // Select a real answer clause when the source explicitly separates
         // a question/definition/list/uncertainty from its explanation.
+        overdueDecisionSpan(text,query,confidence)?.let { return it }
         grammaticalAnswerClause(text, query, confidence)?.let { return it }
         val analysis=SearchLanguage.analyze(query)
         val initial=text.substring(start,end)
