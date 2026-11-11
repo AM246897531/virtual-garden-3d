@@ -9,6 +9,7 @@ on:
       - scripts/test_char_trigram_100.py
       - scripts/test_char_trigram_bridges_100.py
       - scripts/build_char_trigram_index.py
+      - scripts/build_gold_answer_offsets.py
       - .github/workflows/mishneh-source-qa-100.yml
   workflow_dispatch:
 jobs:
@@ -36,6 +37,8 @@ jobs:
         run: python scripts/test_natural_query_semantics.py
       - name: Validate 100 question references and verbatim answer-anchor text
         run: python scripts/validate_natural_100.py
+      - name: Derive 100 exact answer-phrase locations in original UTF-16 texts
+        run: python scripts/build_gold_answer_offsets.py
       - name: Upload source-only QA evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -45,5 +48,6 @@ jobs:
             artifacts/natural_100_gold_validation.json
             artifacts/corpus_report.json
             artifacts/char3_report.json
+            artifacts/gold_answer_offsets_100.json
           retention-days: 30
           if-no-files-found: warn
