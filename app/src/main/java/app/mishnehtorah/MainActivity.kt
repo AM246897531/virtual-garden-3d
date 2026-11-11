@@ -150,7 +150,8 @@ fun RambamApp(initialQuery: String = "", debugTypeahead: Boolean = false, debugQ
                                 passage.end > passage.start && (required.isBlank() ||
                                     HebrewSearch.normalize(top.text.substring(passage.start, passage.end))
                                         .contains(HebrewSearch.normalize(required)))
-                            if (passageValid) highlighted++
+                            // An in-bounds span on the wrong law is not a correct highlight.
+                            if (accurate && passageValid) highlighted++
                             val excerpt = if (passage != null && top != null)
                                 top.text.substring(passage.start, passage.end)
                                     .replace('\n', ' ').take(130) else "none"

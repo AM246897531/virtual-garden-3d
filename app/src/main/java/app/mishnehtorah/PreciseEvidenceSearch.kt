@@ -47,9 +47,15 @@ internal class PreciseEvidenceSearch(
     private fun ftsIds(expression: String, maxRows: Int, sink: MutableSet<Int>) {
         if (expression.isBlank()) return
         try {
-            db.rawQuery("SELECT rowid FROM passage_fts WHERE passage_fts MATCH ? LIMIT $maxRows",
-                arrayOf(expression)).use { c ->
-                while (c.moveToNext()) sink.add(c.getInt(0))
+            // FTS4 rowids follow the canonical book ordering. A plain LIMIT
+            // silently starves later books even when a word matches everywhere.
+            // Sample both ends before applying unbiased evidence re-ranking.
+            for ((descending, rows) in listOf(false to maxRows, true to maxOf(150, maxRows / 2))) {
+                val order = if (descending) "DESC" else "ASC"
+                db.rawQuery("SELECT rowid FROM passage_fts WHERE passage_fts MATCH ? " +
+                    "ORDER BY rowid $order LIMIT $rows", arrayOf(expression)).use { c ->
+                    while (c.moveToNext()) sink.add(c.getInt(0))
+                }
             }
         } catch (ex: SQLiteException) {
             Log.w("RambamSearch", "Failed source index query", ex)
@@ -220,9 +226,19 @@ internal class PreciseEvidenceSearch(
         // normative ruling, not merely a narrative with overlapping vocabulary.
         val asksPermission=analysis.normalized.contains("מותר") || analysis.normalized.contains("אסור")
         val permissionEvidence=if (asksPermission && Regex("אסור|מותר|מתר").containsMatchIn(passage)) 20f else 0f
+        // A direct, nearby statement of the queried concepts is generally
+        // stronger evidence than scattered mentions throughout a long law.
+        val lead = words.take(15)
+        var leadCovered = 0f
+        if (lead.isNotEmpty()) {
+            for (i in analysis.terms.indices) {
+                leadCovered += weights[i] * termMatch(analysis.terms[i], lead)
+            }
+        }
+        val leadScore = if (total > 0f) 20f * (leadCovered / total) else 0f
         val score=coverage*110f+matched*2.5f+minOf(7f,directPhrases*3f)+permissionEvidence+
             SearchLanguage.intentBoost(analysis.intent,passage)*.85f+quantityEvidence(analysis,words)+
-            secCoverage*6f+max(0f,semanticScore)*12f-shortness
+            secCoverage*6f+max(0f,semanticScore)*12f+leadScore-shortness
         return Evidence(score,matched,coverage)
     }
 
