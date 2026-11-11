@@ -588,7 +588,9 @@ internal class PreciseEvidenceSearch(
      * windows instead of coloring the entire 200+ character paragraph.
      * Every candidate is a verbatim UTF-16 range; weak windows are rejected.
      */
-    private val directivePattern=Regex("חייב|אסור|מותר|פטור|לא יצא|יצא ידי|קורא|מברכ|אינו|אין")\n\n    private fun tokenWindowEvidence(text: String, analysis: SearchLanguage.Analysis,
+    private val directivePattern=Regex("חייב|אסור|מותר|פטור|לא יצא|יצא ידי|קורא|מברכ|אינו|אין")
+
+    private fun tokenWindowEvidence(text: String, analysis: SearchLanguage.Analysis,
                                     offset: Int, end: Int,
                                     confidence: Float): PassageMatch? {
         if (end<=offset || analysis.terms.isEmpty()) return null
