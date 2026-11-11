@@ -27,9 +27,17 @@ start_query() {
   # Cold starts can take several seconds: do NOT fail on an immediate pidof
   # check before Android has created the app process. Instead wait for the
   # actual semantic+FTS completion marker logged from CorpusStore.search().
+  local expected_section="${2:-}"
   for attempt in $(seq 1 30); do
-    if adb logcat -d -s RambamSearch:I '*:S' | grep -q 'RESULT count=[1-9]'; then
-      echo "SEARCH_RESULT_VERIFIED $1"
+    local match
+    match="$(adb logcat -d -s RambamSearch:I '*:S' | grep 'RESULT count=[1-9]' | tail -n 1 || true)"
+    if [[ -n "$match" ]]; then
+      echo "SEARCH_RESULT_VERIFIED $1 : $match"
+      if [[ -n "$expected_section" && "$match" != *"$expected_section"* ]]; then
+        echo "FAILED: expected top search result to cite '$expected_section', got: $match" >&2
+        adb logcat -d -t 1200 > "$OUT/quality-failure.txt"
+        return 1
+      fi
       sleep 1  # allow Compose to display the finished results before capture
       return 0
     fi
@@ -48,14 +56,14 @@ tap() { adb shell input tap "$1" "$2"; sleep 2; }
 tap $((W/2)) $((H*20/100))
 screenshot 02-search-focused
 adb shell input keyevent 4 || true
-start_query "שכחתי יעלה ויבוא בברכת המזון"
+start_query "שכחתי יעלה ויבוא בברכת המזון" "הלכות ברכות"
 screenshot 03-birkat-hamazon-query
 tap $((W/2)) $((H*43/100))
 screenshot 04-opened-search-result
 tap $((W*8/100)) $((H*7/100))
-start_query "מה הדין אדם ששכח להזכיר ראש חודש"
+start_query "מה הדין אדם ששכח להזכיר ראש חודש" "הלכות ברכות"
 screenshot 05-paraphrase-query
-start_query "ר״ח ברכה חוזר"
+start_query "ר״ח ברכה חוזר" "הלכות ברכות"
 screenshot 06-abbreviation-query
 adb shell am force-stop "$PKG"
 adb shell am start -n "$PKG/.MainActivity"

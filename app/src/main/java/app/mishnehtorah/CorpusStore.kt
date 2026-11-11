@@ -27,6 +27,10 @@ object HebrewSearch {
         "יעלה ויבוא" to listOf("יעלה ויבא", "ראשי חדשים", "שכח", "לא הזכיר", "מאורע"),
         "ברכת המזון" to listOf("ברכות", "מזון"),
         "שכחתי" to listOf("שכח", "לא הזכיר"),
+        "שכח" to listOf("שכח", "נזכר", "לא אמר", "לא הזכיר"),
+        "להזכיר" to listOf("הזכיר", "לא הזכיר", "אמר"),
+        "ראש חודש" to listOf("ראשי חדשים", "ראש חדש", "יעלה ויבא"),
+        "ראש חדש" to listOf("ראשי חדשים", "ראש חדש", "יעלה ויבא"),
         "לחזור" to listOf("חוזר", "חוזר ומברך"),
         "מותר" to listOf("מותר", "רשאי"),
         "אסור" to listOf("אסור", "אינו רשאי")
@@ -114,13 +118,19 @@ class CorpusStore private constructor(
     // NEVER assert equivalent halakhic rulings or generate legal answers.
     fun search(input: String, limit: Int = 50): List<Law> {
         val startedAt = android.os.SystemClock.elapsedRealtime()
-        val base = HebrewSearch.normalize(input)
+        // Expand common Hebrew abbreviations before both semantic and FTS search.
+        val expandedInput = input.replace("ר״ח", "ראש חודש")
+            .replace("ר\"ח", "ראש חודש")
+            .replace("ר'ח", "ראש חודש")
+        val base = HebrewSearch.normalize(expandedInput)
+        val isRoshChodesh = ("ראש חודש" in base || "ראש חדש" in base)
+        val isForgetting = ("שכח" in base || "הזכיר" in base || "לא אמר" in base)
         if (base.isBlank()) return emptyList()
         val words = base.split(" ").filter {
             it.length >= 2 && !searchStopWords.contains(it)
         }.distinct().take(10)
         if (words.isEmpty()) return emptyList()
-        val variants = HebrewSearch.alternatives(input).drop(1)
+        val variants = HebrewSearch.alternatives(expandedInput).drop(1)
             .map { HebrewSearch.normalize(it) }
             .filter { it.isNotBlank() }.distinct()
         val queries = mutableListOf<String>()
@@ -129,6 +139,11 @@ class CorpusStore private constructor(
             queries.add("שכח* AND יעלה*")
         }
         if ("מזונ" in base) queries.add("שכח* AND מזונ*")
+        if (isRoshChodesh) {
+            queries.add("ראשי* AND חדש*")
+            queries.add("ראש* AND חדש*")
+            if (isForgetting) queries.add("שכח* AND ראש*")
+        }
         queries.add(words.joinToString(" AND ") { it + "*" })
         queries.add(words.take(5).joinToString(" OR ") { it + "*" })
         variants.forEach { phrase ->
@@ -147,7 +162,7 @@ class CorpusStore private constructor(
             }
         }
         val semanticResults = try {
-            semantic.nearest(input, 140)
+            semantic.nearest(expandedInput, 140)
         } catch (error: Exception) {
             android.util.Log.e("RambamSearch", "Semantic scoring failed; retaining exact FTS results", error)
             emptyList()
@@ -185,6 +200,17 @@ class CorpusStore private constructor(
             if ("יעלה" in base && "יעלה ויבא" in text) rank += 50
             if ("שכח" in base && "שכח" in text) rank += 16
             if ("ראש" in base && "ראשי חדש" in text) rank += 12
+            // Named-festival retrieval: a Hebrew paraphrase like "שכח להזכיר
+            // ראש חודש" should prioritize the law discussing that omission,
+            // not an unrelated chapter merely mentioning the word "ראש".
+            // This is source-ranking only, never an inferred halakhic ruling.
+            if (isRoshChodesh && isForgetting) {
+                if (("ראשי חדש" in text || "ראש חדש" in text) &&
+                    ("שכח" in text || "לא הזכיר" in text || "לא אמר" in text)) {
+                    rank += 280
+                }
+                if ("ברכות" in section || "תפילה" in section) rank += 60
+            }
             // Blend exact source retrieval with the learned Hebrew semantic
             // score. Exact matches remain important for legal reference.
             rank += ((semanticScores[law.id] ?: 0f) * 62f).toInt()
@@ -199,7 +225,8 @@ class CorpusStore private constructor(
             .take(limit)
             .map { it.first }
         android.util.Log.i("RambamSearch",
-            "RESULT count=${ranked.size} terms=${words.size} elapsed_ms=" +
+            "RESULT count=${ranked.size} terms=${words.size} top=" +
+                (ranked.firstOrNull()?.reference ?: "none") + " elapsed_ms=" +
                 (android.os.SystemClock.elapsedRealtime() - startedAt))
         return ranked
     }
