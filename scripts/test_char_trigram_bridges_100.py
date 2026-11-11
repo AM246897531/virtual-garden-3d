@@ -59,12 +59,15 @@ def bridges(question):
         out.append("שכח הזכרת שבת קדושת היום בברכה ברכת המזון")
     if "סוכה" in q and any(x in q for x in ("גבוה","גובה","גבהה","אמות","אמה")):
         out.append("גובה סוכה שיעור עשרים אמה טפחים גבוהה פסולה")
-    if any(x in q for x in ("בעלי חיימ","בהמות","חיות")) and any(
-        x in q for x in ("באכילה","לאכול","אכיל","סימנימ")
-    ):
+    is_animal=any(x in q for x in ("בעלי חיימ","בהמות","חיות"))
+    is_eating=any(x in q for x in ("באכילה","לאכול","אכיל"))
+    is_identification=any(x in q for x in ("סימנימ","סימני","סימנ","כשר","טמא","טהור")) or (
+        is_eating and "מותר" in q
+    )
+    if is_animal and is_identification:
         out.append("סימנים של בהמה חיה עוף דגים טהור טמא מאכלות")
     if any(x in q for x in ("חברימ","רעיי","סביבה","חברתי")) and any(
-        x in q for x in ("משפיע","מושפע","מתנהג","השפעה","סביבה")
+        x in q for x in ("משפיע","מושפע","מתנהג","השפעה","התנהגות")
     ):
         out.append("דעות הנהגות חכמים חברים רעים השפעה סביבה מעשים")
     words=set(q.split())
@@ -102,6 +105,8 @@ def main():
     # No false expansion for look-alike substrings in other halakhic terms.
     assert not bridges("מה חובת ערב שבת לגבי אבידה שנמצאה?")
     assert not bridges("בערב חובה לטפל באבידה של האחר")
+    assert not bridges("האם צריך לברך לפני אכילה של בעלי חיים?")
+    assert not bridges("איך שומרים על סביבה נקייה מטינופת?")
     assert "כבוד רבו" in bridges("למה חובה לכבד את הרב יותר מאבא?")[0]
     check_suite("NATURAL100",main,index,refs)
     check_suite("ADDITIONAL30",alternate,index,refs)
