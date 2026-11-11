@@ -331,9 +331,18 @@ internal object SearchLanguage {
         val influenceQuery=listOf("משפיע","מושפע","מתנהג","השפעה","סביבה").any { q.contains(it) }
         if (socialQuery && influenceQuery)
             output.add("דעות הנהגות חכמים חברים רעים השפעה סביבה מעשים")
-        val teacherQuery=listOf("רב","מורה","מלמד").any { q.contains(it) }
-        val parentQuery=listOf("אב","אבא","הורימ").any { q.contains(it) }
-        val respectQuery=listOf("כבוד","לכבד","חובה","כיבוד").any { q.contains(it) }
+        // Whole words only. Substring tests would mistake "ערב" for "רב"
+        // and "אבידה" for "אב", triggering unrelated topic expansions.
+        val queryWords=q.split(' ').toHashSet()
+        val teacherQuery=queryWords.any {
+            it in setOf("רב","הרב","רבו","לרב","מורה","המורה","מלמד","רבנו")
+        }
+        val parentQuery=queryWords.any {
+            it in setOf("אב","אבא","אבי","אביו","האב","מאבא","מאבי","הורימ","ההורימ")
+        }
+        val respectQuery=queryWords.any {
+            it in setOf("כבוד","לכבד","חובה","כיבוד","לכבוד","הכבוד")
+        }
         if (teacherQuery && parentQuery && respectQuery)
             output.add("כבוד רבו מורא רבו אביו כבוד תלמוד תורה")
         return output.distinct()
