@@ -4,6 +4,8 @@ APK="app/build/outputs/apk/debug/app-debug.apk"
 PKG="app.mishnehtorah"
 OUT="artifacts/screenshots"
 mkdir -p "$OUT"
+# Preserve all 110 individual case logs for failure analysis, even if the gate fails.
+adb logcat -G 16M >/dev/null 2>&1 || true
 # Disable the unstable emulator launcher before launching our standalone app.
 # A Pixel Launcher ANR can obscure screenshots even when the target app works.
 adb shell am force-stop com.google.android.apps.nexuslauncher || true
@@ -14,6 +16,7 @@ adb shell input keyevent 4 || true
 adb install -r "$APK"
 adb shell am start -n "$PKG/.MainActivity"
 sleep 14
+adb exec-out screencap -p > "$OUT/00-initial-home.png" || true
 adb shell pidof "$PKG" > /dev/null || { adb logcat -d -t 500 > "$OUT/crash-logcat.txt"; exit 1; }
 screenshot() {
   adb exec-out screencap -p > "$OUT/$1.png"
@@ -67,6 +70,7 @@ for attempt in $(seq 1 480); do
     # Accuracy AND source-excerpt fidelity are independent gates.
     passed="$(echo "$summary" | sed -nE 's/.*passed=([0-9]+).*/\1/p')"
     marked="$(echo "$summary" | sed -nE 's/.*highlighted=([0-9]+).*/\1/p')"
+    adb logcat -d -s RambamQuality:I "*:S" > "$OUT/quality-110-log.txt" || true
     if [[ -z "$passed" || -z "$marked" || "$passed" -lt 110 || "$marked" -lt 110 ]]; then
       echo "QUALITY_GATE_NOT_MET: sources=$passed/110 highlights=$marked/110, minimum=110" >&2
       adb logcat -d -t 12000 > "$OUT/quality-gate-failure-logcat.txt"
