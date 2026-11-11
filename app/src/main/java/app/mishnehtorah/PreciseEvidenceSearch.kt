@@ -266,7 +266,14 @@ internal class PreciseEvidenceSearch(
         // A single incidental word must not route a question to a long,
         // unrelated section title. E.g. the ethical word "טוב" does not
         // imply the legal topic "שביתת יום טוב".
-        val subjectCoverage=direct.toFloat()/title.size
+        // Count distinct heading concepts, not repeated aliases. A colloquial
+        // synonym can match a section even if its printed title differs.
+        val matchedHeadingWords=title.count { heading ->
+            analysis.terms.any { term -> term.alternatives.any { alt ->
+                SearchLanguage.matches(alt,heading)>=.80f
+            } }
+        }
+        val subjectCoverage=matchedHeadingWords.toFloat()/title.size
         val titleEvidence=(synonymous*.65f+direct*12f)*subjectCoverage
         return minOf(48f,titleEvidence+(if (fullPhrase) 30f else 0f))
     }
