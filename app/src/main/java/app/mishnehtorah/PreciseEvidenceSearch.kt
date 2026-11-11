@@ -472,7 +472,7 @@ internal class PreciseEvidenceSearch(
             val overview = analysis.intent==SearchLanguage.Intent.GENERAL ||
                 analysis.intent==SearchLanguage.Intent.REQUIREMENT
             val sourceOpeningBonus=if (overview && !analysis.deadlineOverrun &&
-                lawOrdinals[passage.lawId]==1) 5f else 0f
+                lawOrdinals[passage.lawId]==1) 15f else 0f
             val rankedEvidence=score.copy(
                 score=score.score+sectionBonus+chapterBonus+sourceOpeningBonus)
             val old=accepted[passage.lawId]
