@@ -5,7 +5,8 @@ import kotlin.math.ln
 /** Language-level normalization, not hand-coded destinations to specific halakhot. */
 internal object SearchLanguage {
     internal data class Term(val word: String, val alternatives: List<String>, val weight: Float = 1f)
-    internal data class Analysis(val terms: List<Term>, val intent: Intent, val normalized: String)
+    internal data class Analysis(val terms: List<Term>, val intent: Intent, val normalized: String,
+        val deadlineOverrun: Boolean = false)
     internal enum class Intent { GENERAL, WHEN, WHERE, HOW_MANY, REQUIREMENT, CONDITION }
 
     private val stop = setOf(
@@ -26,6 +27,19 @@ internal object SearchLanguage {
     private val synonyms: Map<String, List<String>> = mapOf(
         "שכח" to listOf("שכח", "שכחתי", "שכחה", "נזכר", "הזכיר", "הזכרה"),
         "שכחתי" to listOf("שכח", "שכחה", "נזכר", "הזכיר"),
+        // General late/expired-time language, not references to any particular law.
+        "נגמר" to listOf("עבר", "איחר", "אחר", "לאחר", "שעות"),
+        "נגמרה" to listOf("עבר", "איחר", "אחר", "לאחר"),
+        "הסתיים" to listOf("עבר", "איחר", "אחר", "לאחר"),
+        "פספסתי" to listOf("איחר", "אחר", "עבר", "שכח"),
+        "איחרתי" to listOf("איחר", "אחר", "עבר", "לאחר"),
+        "החמצתי" to listOf("איחר", "אחר", "עבר", "לאחר"),
+        "בבוקר" to listOf("ביומ", "שחרית", "בבקר", "בבוקר"),
+        "בוקר" to listOf("ביומ", "שחרית", "בקר"),
+        "זמן" to listOf("זמנ", "שעה", "שעות", "עונה", "בעונתו"),
+        "הזמן" to listOf("זמנ", "שעה", "שעות", "עונה", "בעונתו"),
+        "זמנ" to listOf("זמנ", "שעה", "שעות", "עונה", "בעונתו"),
+        "לקריאה" to listOf("קורא", "קוראינ", "לקרות", "קריאה"),
         "הזכיר" to listOf("הזכיר", "הזכרה", "שכח", "נזכר"),
         "ראש" to listOf("ראש", "ראשי"),
         "חודש" to listOf("החדש", "חדש", "חדשים", "חודש", "חודשים"),
@@ -199,6 +213,11 @@ internal object SearchLanguage {
             all.any { it in intentRequire } -> Intent.REQUIREMENT
             else -> Intent.GENERAL
         }
+        // A sentence describing that a deadline has ALREADY passed is different
+        // from a generic question about when a mitzvah begins or ends.
+        val timeMentioned = Regex("זמנ|שעה|שעות|מאוחר|שחרית|בוקר|בקר").containsMatchIn(normalized)
+        val deadlineOverrun = timeMentioned &&
+            Regex("נגמר|הסתימ|חלפ|עבר|איחר|פספס|החמצ|לא הספק|מאוחר מדי").containsMatchIn(normalized)
         val nonJewish=normalized.contains("אינו יהודי") || normalized.contains("לא יהודי")
         val result=ArrayList<Term>()
         val seen=HashSet<String>()
@@ -224,11 +243,19 @@ internal object SearchLanguage {
             if (!seen.add(stem)) continue
             val intentWord = word in intentTime || word in intentWhere || word in intentCount || word in intentRequire
             result.add(Term(word,alternatives,if (intentWord) .48f else 1f))
-            if (result.size>=11) break
+            if (result.size >= (if (deadlineOverrun) 14 else 16)) break
         }
-        if (nonJewish && result.size<11) result.add(
+        if (deadlineOverrun) {
+            // Two independent evidence concepts: time boundary + overdue action.
+            // Neither knows or names a target source; both must meet source text.
+            if (result.none { it.word == "איחר" }) result.add(
+                Term("איחר", listOf("איחר", "אחר", "לאחר", "עבר"), 1.25f))
+            if (result.none { it.word == "שעות" }) result.add(
+                Term("שעות", listOf("שעות", "שעה", "זמנ", "עונתו"), 1.1f))
+        }
+        if (nonJewish && result.size<16) result.add(
             Term("עכומ",listOf("עכומ","נכרי","גוי","עובדכוכבימ"),1.2f))
-        return Analysis(result,intent,normalized)
+        return Analysis(result,intent,normalized,deadlineOverrun)
     }
 
     private val affixes = charArrayOf('ב','כ','ל','מ','ו','ה','ש')
