@@ -171,6 +171,9 @@ class CorpusStore private constructor(
         // When a law was opened outside search, run content-only matching with
         // the original passage finder; never use a predetermined source hint.
         val passage = RelevantPassage.find(law.text, question, "", semantic)
+            ?: SearchLanguage.sourceVocabularyBridges(question).firstNotNullOfOrNull { bridge ->
+                RelevantPassage.find(law.text, bridge, "", semantic)
+            }
         synchronized(highlightCache) { highlightCache[key] = passage }
         return passage
     }
