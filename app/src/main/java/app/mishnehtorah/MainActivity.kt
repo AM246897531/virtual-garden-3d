@@ -158,7 +158,7 @@ fun RambamApp(initialQuery: String = "", debugTypeahead: Boolean = false,
                             val hasGoldAnchor = required.isNotBlank()
                             if (hasGoldAnchor) goldAnchors++
                             val anchorValid = boundsValid && hasGoldAnchor &&
-                                HebrewSearch.normalize(top!!.text.substring(passage!!.start, passage.end))
+                                HebrewSearch.normalize(top!!.text.substring(passage!!.start, passage!!.end))
                                     .contains(HebrewSearch.normalize(required))
                             // Legacy measure: source correct + span in bounds. This is NOT
                             // proof of semantically accurate highlighting without an anchor.
@@ -166,7 +166,7 @@ fun RambamApp(initialQuery: String = "", debugTypeahead: Boolean = false,
                             if (accurate && passageValid) highlighted++
                             if (accurate && anchorValid) verifiedAnchors++
                             val excerpt = if (boundsValid)
-                                top!!.text.substring(passage!!.start, passage.end)
+                                top!!.text.substring(passage!!.start, passage!!.end)
                                     .replace('\n', ' ').take(130) else "none"
                             Log.i("RambamQuality", "${prefix}_CASE ${index + 1}/${cases.length()} " +
                                 "${if (accurate) "PASS" else "FAIL"} tier=${item.getInt("tier")} " +
