@@ -279,6 +279,9 @@ internal class PreciseEvidenceSearch(
     }
 
     private fun termMatch(group: SearchLanguage.Term, tokens: List<String>): Float {
+        // A literal primary-word hit is already the maximum possible score.
+        // Avoid repeated fuzzy morphology of every token in that common case.
+        if (group.alternatives.firstOrNull() in tokens) return 1f
         var strongest=0f
         for ((index, w) in group.alternatives.withIndex()) {
             val aliasPenalty = if (index==0) 1f else .88f
