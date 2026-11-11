@@ -341,9 +341,80 @@ internal class PreciseEvidenceSearch(
         return sorted
     }
 
+    /**
+     * Prefer the Rambam's answer clause over an introductory question,
+     * a chapter's enumerative heading, or a generic statement of a doubt.
+     * These are Hebrew discourse patterns, never benchmark-specific sources.
+     * Original UTF-16 offsets are preserved for exact highlighting.
+     */
+    private fun grammaticalAnswerClause(text: String, question: String,
+                                        confidence: Float): PassageMatch? {
+        val normalizedQuestion = HebrewSearch.normalize(question)
+        if (normalizedQuestion.isBlank()) return null
+        val clauses = ArrayList<Pair<Int,Int>>()
+        var last = 0
+        for (m in Regex("[.?!׃;:\n]+").findAll(text)) {
+            val end = m.range.last + 1
+            if (end > last && text.substring(last, end).isNotBlank())
+                clauses.add(last to end)
+            last = end
+        }
+        if (last < text.length && text.substring(last).isNotBlank())
+            clauses.add(last to text.length)
+        if (clauses.size < 2) return null
+        fun clause(i: Int): String = text.substring(clauses[i].first, clauses[i].second)
+        fun overlaps(segment: String): Boolean {
+            val words = HebrewSearch.normalize(segment).split(' ').filter { it.length >= 3 }
+            return normalizedQuestion.split(' ').filter { it.length >= 4 }.any { term ->
+                words.any { SearchLanguage.matches(term, it) >= .80f }
+            }
+        }
+        val introduction = HebrewSearch.normalize(clause(0))
+        val introductoryQuestion = introduction.startsWith("כמה ") ||
+            introduction.startsWith("אי זו ") || introduction.startsWith("אי זה ") ||
+            introduction.startsWith("איזו ") || introduction.startsWith("איזה ") ||
+            introduction.startsWith("כיצד ")
+        if (introductoryQuestion && overlaps(clause(0))) {
+            val start = clauses[1].first
+            val end = if (clauses.size >= 3 && clauses[1].second-start < 100)
+                clauses[2].second else clauses[1].second
+            return PassageMatch(start, minOf(end, start+320), confidence)
+        }
+        val listAsked = normalizedQuestion.contains("כמה") ||
+            normalizedQuestion.contains("מהם") || normalizedQuestion.contains("מה הם")
+        if (listAsked) {
+            val at = (1 until minOf(clauses.size,5)).firstOrNull { i ->
+                HebrewSearch.normalize(clause(i)).contains("ואלו הן")
+            }
+            if (at != null && overlaps(clause(at-1)+clause(at))) {
+                val start = clauses[at].first
+                return PassageMatch(start, minOf(clauses[minOf(at+2,clauses.lastIndex)].second,
+                    start+320),confidence)
+            }
+        }
+        val uncertaintyAsked = normalizedQuestion.contains("לא בטוח") ||
+            normalizedQuestion.contains("לא ודאי") ||
+            normalizedQuestion.contains("אינו ודאי") || normalizedQuestion.contains("ספק")
+        if (uncertaintyAsked) {
+            val at = clauses.indexOfFirst { (a,b) ->
+                val span = HebrewSearch.normalize(text.substring(a,b))
+                span.contains("ספק") && overlaps(text.substring(a,b))
+            }
+            if (at >= 0) {
+                val start = clauses[at].first
+                return PassageMatch(start,minOf(clauses[minOf(at+2,clauses.lastIndex)].second,
+                    start+320),confidence)
+            }
+        }
+        return null
+    }
+
     fun refine(text: String, query: String, start: Int, end: Int, confidence: Float): PassageMatch? {
         if (start<0 || end>text.length || end<=start) return null
         // The index guarantees that this is a verbatim, original offset.
+        // Select a real answer clause when the source explicitly separates
+        // a question/definition/list/uncertainty from its explanation.
+        grammaticalAnswerClause(text, query, confidence)?.let { return it }
         val analysis=SearchLanguage.analyze(query)
         val initial=text.substring(start,end)
         if (initial.length<=125 || analysis.terms.isEmpty())
