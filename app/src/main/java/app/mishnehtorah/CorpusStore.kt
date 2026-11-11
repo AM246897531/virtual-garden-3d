@@ -54,7 +54,8 @@ object HebrewSearch {
 }
 
 class CorpusStore private constructor(
-    private val db: SQLiteDatabase, private val semantic: SemanticIndex
+    private val db: SQLiteDatabase, private val semantic: SemanticIndex,
+    private val characterIndex: CharTrigramIndex?
 ) {
     companion object {
         suspend fun open(context: Context): CorpusStore = withContext(Dispatchers.IO) {
@@ -77,6 +78,7 @@ class CorpusStore private constructor(
             }
             // Never label a lexical-only installation as smart search.
             val model = SemanticIndex.load(context)
+            val characterIndex = CharTrigramIndex.load(context)
             val opened = SQLiteDatabase.openDatabase(destination.absolutePath, null,
                 SQLiteDatabase.OPEN_READONLY)
             try {
@@ -85,8 +87,9 @@ class CorpusStore private constructor(
                         "Bundled corpus is incomplete"
                     }
                 }
-                Log.i("RambamSearch", "SMART_SEARCH_READY corpus=valid semantic=loaded")
-                CorpusStore(opened, model)
+                Log.i("RambamSearch", "SMART_SEARCH_READY corpus=valid semantic=loaded " +
+                    "char3=${if (characterIndex != null) "loaded" else "unavailable"}")
+                CorpusStore(opened, model, characterIndex)
             } catch (error: Exception) {
                 opened.close()
                 throw error
@@ -153,7 +156,7 @@ class CorpusStore private constructor(
         return output
     }
 
-    private val preciseSearch = PreciseEvidenceSearch(db, semantic)
+    private val preciseSearch = PreciseEvidenceSearch(db, semantic, characterIndex)
     private val highlightCache = object : LinkedHashMap<String, PassageMatch?>(180, .75f, true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, PassageMatch?>?) =
             size > 180
