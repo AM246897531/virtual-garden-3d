@@ -16,7 +16,8 @@ import kotlin.math.max
  */
 internal class PreciseEvidenceSearch(
     private val db: SQLiteDatabase,
-    private val semantic: SemanticIndex
+    private val semantic: SemanticIndex,
+    private val characterIndex: CharTrigramIndex? = null
 ) {
     internal data class Hit(val lawId: Int, val start: Int, val end: Int,
                             val confidence: Float, val matched: Int, val coverage: Float)
@@ -442,9 +443,14 @@ internal class PreciseEvidenceSearch(
         val aliases=proximityAliases(analysis)
         val nearest=semantic.nearest(query,240)
         val semanticScores=nearest.toMap()
+        // Orthogonal source-only character candidate route. This returns
+        // literal document similarities, never a fabricated answer.
+        val characterNearest=characterIndex?.nearest(query,240).orEmpty()
+        val characterScores=characterNearest.toMap()
         val ids=candidateIds(analysis)
         val lexicalCount=ids.size
         addSemanticPassages(nearest,ids)
+        addSemanticPassages(characterNearest,ids)
         val passages=loadPassages(ids)
         if (passages.isEmpty()) return emptyList()
         val lawSections=HashMap<Int,String>()
@@ -494,8 +500,13 @@ internal class PreciseEvidenceSearch(
                 analysis.intent==SearchLanguage.Intent.REQUIREMENT
             val sourceOpeningBonus=if (overview && !analysis.deadlineOverrun &&
                 lawOrdinals[passage.lawId]==1) 15f else 0f
+            // A small independent text-similarity corroboration helps break
+            // ties; exact source evidence still dominates the 110-point
+            // concept coverage score. New route may be disabled by not
+            // packaging its asset on older installations.
+            val charBonus=(characterScores[passage.lawId] ?: 0f) * 14f
             val rankedEvidence=score.copy(
-                score=score.score+sectionBonus+chapterBonus+sourceOpeningBonus)
+                score=score.score+sectionBonus+chapterBonus+sourceOpeningBonus+charBonus)
             val old=accepted[passage.lawId]
             if (old==null || rankedEvidence.score>old.second.score)
                 accepted[passage.lawId]=passage to rankedEvidence
@@ -507,7 +518,7 @@ internal class PreciseEvidenceSearch(
             .thenByDescending { it.coverage }.thenBy { it.lawId })
             .take(limit).toList()
         Log.i("RambamSearch", "PRECISION_SEARCH lexical_passages=$lexicalCount " +
-            "semantic_laws=${nearest.size} rescored=${passages.size} " +
+            "semantic_laws=${nearest.size} char_laws=${characterNearest.size} rescored=${passages.size} " +
             "supported_laws=${accepted.size} returned=${sorted.size} " +
             "top=${sorted.firstOrNull()?.lawId ?: -1} " +
             "elapsed_ms=${android.os.SystemClock.elapsedRealtime()-started}")
