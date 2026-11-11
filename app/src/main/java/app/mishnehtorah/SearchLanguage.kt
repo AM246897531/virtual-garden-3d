@@ -394,7 +394,12 @@ internal object SearchLanguage {
             val n=HebrewSearch.normalize(chunk)
             val words=n.split(' ').filter { it.length>=3 && it !in stop }
             val meaningful=words.count { it.length>=4 }
-            val isQuestion=chunk.contains("?") || n.startsWith("מה ") ||
+            // Regex splitting strips punctuation, so inspect the real
+            // following character in the original unmodified question.
+            val originalAt=question.indexOf(chunk)
+            val suffix=if (originalAt>=0) question.substring(originalAt+chunk.length)
+                .trimStart() else ""
+            val isQuestion=suffix.startsWith("?") || n.startsWith("מה ") ||
                 n.startsWith("מתי ") || n.startsWith("האם ") ||
                 n.startsWith("באיזה ") || n.contains(" שכחתי ")
             val boilerplate=if (listOf("אני מבקש למצוא","אני מנסה להבין",
