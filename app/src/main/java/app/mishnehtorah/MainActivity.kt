@@ -160,12 +160,30 @@ fun RambamApp(initialQuery: String = "", debugTypeahead: Boolean = false,
                                 passage.end-passage.start <= 360
                             val hasGoldAnchor = required.isNotBlank()
                             if (hasGoldAnchor) goldAnchors++
-                            val anchorValid = boundsValid && hasGoldAnchor &&
+                            val goldStart=item.optInt("highlight_start_utf16",-1)
+                            val goldEnd=item.optInt("highlight_end_utf16",-1)
+                            val goldAvailable=goldStart>=0 && goldEnd>goldStart
+                            val overlap=if (boundsValid && goldAvailable)
+                                (minOf(passage!!.end,goldEnd)-maxOf(passage.start,goldStart))
+                                    .coerceAtLeast(0) else 0
+                            val goldCoverage=if (goldAvailable)
+                                overlap.toFloat()/(goldEnd-goldStart) else 0f
+                            val highlightPrecision=if (boundsValid)
+                                overlap.toFloat()/(passage!!.end-passage.start) else 0f
+                            // Reject painting a broad paragraph that merely contains
+                            // a small expected phrase. Original UTF-16 source offsets
+                            // are independently computed from corpus text at build time.
+                            val offsetAccurate=goldAvailable &&
+                                goldCoverage>=.90f && highlightPrecision>=.20f
+                            val anchorPresent=boundsValid && hasGoldAnchor &&
                                 HebrewSearch.normalize(top!!.text.substring(passage!!.start, passage!!.end))
                                     .contains(HebrewSearch.normalize(required))
-                            // Legacy measure: source correct + span in bounds. This is NOT
-                            // proof of semantically accurate highlighting without an anchor.
-                            val passageValid = boundsValid && (!hasGoldAnchor || anchorValid)
+                            val anchorValid=anchorPresent &&
+                                (!debugQuality100 || offsetAccurate)
+                            // Legacy source-quality and new strict exact offset score
+                            // are kept independent, so weak highlight checks cannot
+                            // masquerade as measured 100% correctness.
+                            val passageValid=boundsValid && (!hasGoldAnchor || anchorValid)
                             if (accurate && passageValid) highlighted++
                             if (accurate && anchorValid) verifiedAnchors++
                             val excerpt = if (boundsValid)
@@ -176,6 +194,7 @@ fun RambamApp(initialQuery: String = "", debugTypeahead: Boolean = false,
                                 "top=${top?.reference ?: "none"} " +
                                 "expected=$section/$expectedChapter/$expectedLaw " +
                                 "passage=$passageValid anchor=$anchorValid " +
+                                "goldCoverage=$goldCoverage highlightPrecision=$highlightPrecision " +
                                 "spanLength=${if (passage!=null) passage.end-passage.start else -1} " +
                                 "elapsed_ms=${timings.last()} " +
                                 "excerpt=$excerpt")
