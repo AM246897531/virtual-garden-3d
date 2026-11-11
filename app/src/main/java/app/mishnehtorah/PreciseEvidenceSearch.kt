@@ -567,6 +567,48 @@ internal class PreciseEvidenceSearch(
         return null
     }
 
+    /**
+     * For sources with no sentence punctuation, search bounded original-word
+     * windows instead of coloring the entire 200+ character paragraph.
+     * Every candidate is a verbatim UTF-16 range; weak windows are rejected.
+     */
+    private fun tokenWindowEvidence(text: String, analysis: SearchLanguage.Analysis,
+                                    offset: Int, end: Int,
+                                    confidence: Float): PassageMatch? {
+        if (end<=offset || analysis.terms.isEmpty()) return null
+        val snippet=text.substring(offset,end)
+        val tokens=Regex("[\\p{L}\\p{M}]+").findAll(snippet).toList()
+        if (tokens.size<10) return null
+        val words=tokens.map { HebrewSearch.normalize(it.value) }
+        val weights=FloatArray(analysis.terms.size) { 1f }
+        val whole=evidence(analysis,weights,words.joinToString(" "),"",0f)
+        var best: PassageMatch?=null
+        var bestScore=Float.NEGATIVE_INFINITY
+        for (from in words.indices step 3) {
+            for (length in intArrayOf(13,20,28)) {
+                val to=minOf(words.size,from+length)
+                if (to-from<7) continue
+                val a=offset+tokens[from].range.first
+                val b=offset+tokens[to-1].range.last+1
+                if (b-a<45 || b-a>270) continue
+                val normalizedWindow=words.subList(from,to).joinToString(" ")
+                val ev=evidence(analysis,weights,normalizedWindow,"",0f)
+                if (ev.matched<minOf(2,analysis.terms.size) ||
+                    ev.coverage<.32f || ev.coverage+.10f<whole.coverage) continue
+                val directive = Regex("חייב|אסור|מותר|פטור|לא יצא|יצא ידי|קורא|מברכ|אינו|אין").containsMatchIn(normalizedWindow)
+                val intentBonus=if (directive && (analysis.intent==SearchLanguage.Intent.CONDITION ||
+                    analysis.intent==SearchLanguage.Intent.REQUIREMENT ||
+                    analysis.deadlineOverrun)) 9f else 0f
+                val score=ev.score+intentBonus-(b-a)*.032f
+                if (score>bestScore) {
+                    bestScore=score
+                    best=PassageMatch(a,b,confidence)
+                }
+            }
+        }
+        return best
+    }
+
     fun refine(text: String, query: String, start: Int, end: Int, confidence: Float): PassageMatch? {
         if (start<0 || end>text.length || end<=start) return null
         // The index guarantees that this is a verbatim, original offset.
@@ -586,7 +628,8 @@ internal class PreciseEvidenceSearch(
             if (pos-from>=35) { candidates.add(from to pos); from=pos }
         }
         if (initial.length-from>=35) candidates.add(from to initial.length)
-        if (candidates.size<2) return PassageMatch(start,end,confidence)
+        if (candidates.size<2) return tokenWindowEvidence(text,analysis,start,end,confidence)
+            ?: PassageMatch(start,end,confidence)
         val weights=FloatArray(analysis.terms.size) { 1f }
         val full=evidence(analysis,weights,HebrewSearch.normalize(initial),"",0f)
         var best:Pair<Int,Int>?=null
@@ -604,6 +647,7 @@ internal class PreciseEvidenceSearch(
             }
         }
         return if (best!=null) PassageMatch(start+best.first,start+best.second,confidence)
-        else PassageMatch(start,end,confidence)
+        else tokenWindowEvidence(text,analysis,start,end,confidence)
+            ?: PassageMatch(start,end,confidence)
     }
 }
