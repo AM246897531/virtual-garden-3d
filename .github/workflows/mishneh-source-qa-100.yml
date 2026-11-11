@@ -9,6 +9,7 @@ on:
       - scripts/test_char_trigram_100.py
       - scripts/test_char_trigram_bridges_100.py
       - scripts/test_verbose_query_recall_100.py
+      - scripts/test_focused_conversation_100.py
       - scripts/build_char_trigram_index.py
       - scripts/build_gold_answer_offsets.py
       - .github/workflows/mishneh-source-qa-100.yml
@@ -36,6 +37,8 @@ jobs:
         run: python scripts/test_char_trigram_bridges_100.py
       - name: Stress-test retrieval for 100 short and 300 verbose conversational questions
         run: python scripts/test_verbose_query_recall_100.py
+      - name: Validate 400 natural and verbose questions retain every legal query term
+        run: python scripts/test_focused_conversation_100.py
       - name: Confirm early-versus-late Hebrew time intent and unmodified evidence offsets
         run: python scripts/test_natural_query_semantics.py
       - name: Validate 100 question references and verbatim answer-anchor text
