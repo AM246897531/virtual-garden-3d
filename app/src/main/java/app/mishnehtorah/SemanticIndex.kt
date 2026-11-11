@@ -112,9 +112,14 @@ class SemanticIndex private constructor(
     }
 
     private fun queryVector(query: String): FloatArray? {
-        val q = HebrewSearch.normalize(query).split(" ").filter {
+        val contentWords = HebrewSearch.normalize(query).split(" ").filter {
             it.length >= 2 && it !in stop
-        }.distinct().take(32)
+        }.distinct()
+        // The real question may be buried after a long preamble. Preserve
+        // relevant words from BOTH ends instead of first-token truncation.
+        val q = if (contentWords.size > 32)
+            (contentWords.take(16) + contentWords.takeLast(16)).distinct()
+        else contentWords
         if (q.isEmpty()) return null
         val result = FloatArray(dimensions)
         var used = 0
