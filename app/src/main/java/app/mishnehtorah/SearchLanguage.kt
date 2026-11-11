@@ -306,6 +306,39 @@ internal object SearchLanguage {
         return Analysis(result,intent,normalized,deadlineOverrun)
     }
 
+    /**
+     * Concise language-to-topic bridges, not question-to-law destinations.
+     * We use accepted Hebrew legal vocabulary to retrieve authentic text
+     * when conversational wording and the Rambam's classical vocabulary
+     * have little literal overlap. No IDs, source citations or conclusions
+     * are embedded here. The original query is ALWAYS searched separately.
+     */
+    fun sourceVocabularyBridges(question: String): List<String> {
+        val q=HebrewSearch.normalize(question)
+        val output=ArrayList<String>(2)
+        if (listOf("רצה והחליצנו","רצה והחלצנו").any { q.contains(it) }) {
+            output.add("שכח הזכרת שבת קדושת היום בברכה ברכת המזון")
+        }
+        if (q.contains("סוכה") &&
+            listOf("גבוה","גובה","גבהה","אמות","אמה").any { q.contains(it) }) {
+            output.add("גובה סוכה שיעור עשרים אמה טפחים גבוהה פסולה")
+        }
+        val animalQuery=listOf("בעלי חיימ","בהמות","חיות").any { q.contains(it) }
+        val kosherQuery=listOf("באכילה","לאכול","אכיל","סימנימ").any { q.contains(it) }
+        if (animalQuery && kosherQuery)
+            output.add("סימנים של בהמה חיה עוף דגים טהור טמא מאכלות")
+        val socialQuery=listOf("חברימ","רעיי","סביבה","חברתי").any { q.contains(it) }
+        val influenceQuery=listOf("משפיע","מושפע","מתנהג","השפעה","סביבה").any { q.contains(it) }
+        if (socialQuery && influenceQuery)
+            output.add("דעות הנהגות חכמים חברים רעים השפעה סביבה מעשים")
+        val teacherQuery=listOf("רב","מורה","מלמד").any { q.contains(it) }
+        val parentQuery=listOf("אב","אבא","הורימ").any { q.contains(it) }
+        val respectQuery=listOf("כבוד","לכבד","חובה","כיבוד").any { q.contains(it) }
+        if (teacherQuery && parentQuery && respectQuery)
+            output.add("כבוד רבו מורא רבו אביו כבוד תלמוד תורה")
+        return output.distinct()
+    }
+
     private val affixes = charArrayOf('ב','כ','ל','מ','ו','ה','ש')
     /** Conservative morphology: no arbitrary 3-letter root conflation. */
     fun stem(s: String): String {
