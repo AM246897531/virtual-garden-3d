@@ -94,3 +94,12 @@ The user authorized exploring smaller local models and auxiliary open-licensed l
 - The answer-span gold annotations are short phrases. Even gold-offset overlap does not conclusively judge multi-part halachic answers without expert review. Never claim infallibility on arbitrary real user questions.
 - The separate small Hebrew E5 experiment [run 43096714626](https://github.com/AM246897531/virtual-garden-3d/actions/runs/43096714626) remained queued at last inspection. Do not infer that the model has been downloaded, measured or integrated.
 - The user last said **DO NOT COMPILE YET**; respect this until reversed explicitly.
+
+### Additional local, no-APK experiments: failure-aware guardrails
+- Independent LightGBM learning-to-rank diagnostic using the new text/section/semantic retrieval features: one model reached **79/80 on training questions but just 11/20 on held-out questions**. This is overfitting; **it was NOT integrated** into production code.
+- Naive ngram-cosine sliding answer-window experimental selector included only ~39–40 of 100 predeclared answer anchors. **It was NOT integrated**; exact turquoise answer-span localization is still a separate unsolved quality problem.
+- A source-only original-text offset generator is committed. It correctly mapped all 100 gold anchor phrases to absolute original UTF-16 positions, but an independently annotated short phrase is only a minimum required part of the answer, not a guarantee about the completeness of answers with multiple conditions.
+- Tightened teacher/father, food-identification, and social-influence bridge activation against false hits from words sharing substrings. Run [43105016186](https://github.com/AM246897531/virtual-garden-3d/actions/runs/43105016186) succeeded on Python-only 100+30 source recall with negative trigger tests.
+- Source-only fallback highlighting was improved further: when the main query has no direct match in a source law, bridge vocabulary can help select a real verbatim passage even if the search highlight cache is empty. This code remains **uncompiled** per user requirement.
+
+**The key unsolved question is now precision ranking, not raw candidate coverage. Never silently count 100/100 candidate recall as 100/100 user-facing search results.**
