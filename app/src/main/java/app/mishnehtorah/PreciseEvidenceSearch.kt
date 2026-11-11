@@ -298,6 +298,39 @@ internal class PreciseEvidenceSearch(
         return strongest
     }
 
+    /**
+     * Cached per-word concept matches for this ONE question. The lexical
+     * calculations are exactly the same as termMatch; only their repeated
+     * evaluation across thousands of passages is eliminated.
+     */
+    private fun termMatchCached(index: Int, analysis: SearchLanguage.Analysis,
+                                tokens: List<String>,
+                                cache: MutableMap<String, FloatArray>): Float {
+        var best=0f
+        for (token in tokens) {
+            val values=cache[token] ?: run {
+                val row=FloatArray(analysis.terms.size)
+                for (i in analysis.terms.indices) {
+                    var score=0f
+                    for ((variantIndex,variant) in analysis.terms[i].alternatives.withIndex()) {
+                        val penalty=if (variantIndex==0) 1f else .88f
+                        val candidateScore=SearchLanguage.matches(variant,token)*penalty
+                        if (candidateScore>score) score=candidateScore
+                        if (score>=1f) break
+                    }
+                    row[i]=score
+                }
+                // Cap transient per-query state: avoid growing memory with
+                // arbitrary documents or huge user-supplied questions.
+                if (cache.size<30000) cache[token]=row
+                row
+            }
+            if (values[index]>best) best=values[index]
+            if (best>=1f) break
+        }
+        return best
+    }
+
     /** A quantitative answer must give an amount for the *asked-about noun*,
      * not merely mention another number somewhere in the same law. */
     private fun quantityEvidence(analysis: SearchLanguage.Analysis, words: List<String>): Float {
@@ -394,16 +427,21 @@ internal class PreciseEvidenceSearch(
     private fun evidence(analysis: SearchLanguage.Analysis,
                          weights: FloatArray, passage: String, section: String,
                          semanticScore: Float,
-                         precomputedAliases: Map<String, Int>? = null): Evidence {
+                         precomputedAliases: Map<String, Int>? = null,
+                         tokenMatchCache: MutableMap<String, FloatArray>? = null): Evidence {
         val words=passage.split(' ').filter { it.length>=3 }
         if (words.isEmpty()) return Evidence(-999f,0,0f)
         var covered=0f;var matched=0;var sectionCovered=0f;var total=0f
         for (i in analysis.terms.indices) {
             val t=analysis.terms[i];val w=weights[i];total+=w
-            val m=termMatch(t,words)
+            val m=if (tokenMatchCache!=null)
+                termMatchCached(i,analysis,words,tokenMatchCache)
+            else termMatch(t,words)
             if (m>0f) {covered+=w*m;matched++}
             else if (section.isNotBlank()) {
-                val s=termMatch(t,section.split(' '))
+                val s=if (tokenMatchCache!=null)
+                    termMatchCached(i,analysis,section.split(' '),tokenMatchCache)
+                else termMatch(t,section.split(' '))
                 if (s>0f) sectionCovered+=w*s
             }
         }
@@ -423,7 +461,9 @@ internal class PreciseEvidenceSearch(
         var leadCovered = 0f
         if (lead.isNotEmpty()) {
             for (i in analysis.terms.indices) {
-                leadCovered += weights[i] * termMatch(analysis.terms[i], lead)
+                leadCovered += weights[i] * (if (tokenMatchCache!=null)
+                    termMatchCached(i,analysis,lead,tokenMatchCache)
+                else termMatch(analysis.terms[i],lead))
             }
         }
         val leadScore = if (total > 0f) 20f * (leadCovered / total) else 0f
@@ -441,6 +481,7 @@ internal class PreciseEvidenceSearch(
         val started=android.os.SystemClock.elapsedRealtime()
         val weights=FloatArray(analysis.terms.size) { weight(analysis.terms[it]) }
         val aliases=proximityAliases(analysis)
+        val tokenMatchCache=HashMap<String,FloatArray>(8192)
         val nearest=semantic.nearest(query,240)
         val semanticScores=nearest.toMap()
         // Orthogonal source-only character candidate route. This returns
@@ -505,7 +546,7 @@ internal class PreciseEvidenceSearch(
             val sec=lawSections[passage.lawId].orEmpty()
             var score=evidence(analysis,weights,passage.norm,
                 HebrewSearch.normalize(sec), semanticScores[passage.lawId]?:0f,
-                aliases)
+                aliases,tokenMatchCache)
             val needed=if (groupCount==1) 1 else 2
             // Penalize partial subject matches. For hard multi-concept queries
             // a passage that lacks the specific condition is not reliable.
