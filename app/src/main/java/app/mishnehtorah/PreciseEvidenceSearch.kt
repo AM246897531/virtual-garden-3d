@@ -703,6 +703,14 @@ internal class PreciseEvidenceSearch(
         // Select a real answer clause when the source explicitly separates
         // a question/definition/list/uncertainty from its explanation.
         overdueDecisionSpan(text,query,confidence)?.let { return it }
+        // The same source-vocabulary bridge that recovered a classical law
+        // from the user's modern expression may be needed to locate the
+        // actual answer within that law. Choose only original-text windows
+        // with repeated, independently matching source concepts.
+        for (bridge in SearchLanguage.sourceVocabularyBridges(query)) {
+            val expansion=SearchLanguage.analyze(bridge)
+            tokenWindowEvidence(text,expansion,start,end,confidence)?.let { return it }
+        }
         grammaticalAnswerClause(text, query, confidence)?.let { return it }
         val analysis=SearchLanguage.analyze(query)
         val initial=text.substring(start,end)
