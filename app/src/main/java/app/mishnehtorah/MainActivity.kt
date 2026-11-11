@@ -497,8 +497,11 @@ private fun LawResultCard(
     law: Law, first: Boolean = false, onOpen: (Law) -> Unit,
     store: CorpusStore? = null, question: String = ""
 ) {
-    val passage = remember(law.id, question, store) {
-        if (store != null && question.isNotBlank()) store.relevantPassage(law, question) else null
+    val passage by produceState<PassageMatch?>(initialValue = null,
+        law.id, question, store) {
+        value = if (store != null && question.isNotBlank())
+            withContext(Dispatchers.Default) { store.relevantPassage(law, question) }
+        else null
     }
     Surface(
         onClick = { onOpen(law) },
@@ -623,11 +626,16 @@ private fun ReaderPage(
         value = withContext(Dispatchers.IO) { store.chapter(law.book, law.section, law.chapter) }
     }
     val index = neighbors.indexOfFirst { it.id == law.id }
-    val passage = remember(law.id, question, store) { store.relevantPassage(law, question) }
+    val passage by produceState<PassageMatch?>(initialValue = null,
+        law.id, question, store) {
+        value = withContext(Dispatchers.Default) {
+            store.relevantPassage(law, question)
+        }
+    }
     val scroll = rememberScrollState()
     var passageTop by remember(law.id, question) { mutableFloatStateOf(-1f) }
     val density = LocalDensity.current
-    LaunchedEffect(law.id, passageTop) {
+    LaunchedEffect(law.id, passageTop, passage?.start) {
         if (passage != null && passageTop >= 0f) {
             val offset = with(density) { 150.dp.toPx() }
             scroll.animateScrollTo((offset + passageTop).toInt().coerceAtLeast(0))
