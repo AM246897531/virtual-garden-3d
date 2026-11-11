@@ -48,7 +48,7 @@ The user authorized exploring smaller local models and auxiliary open-licensed l
 ### Actual changes committed
 - Query morphology and evidence-window masks are now prepared once per search instead of once for every passage, and exact primary words bypass expensive fuzzy loops. **Speedup not yet benchmarked on device.**
 - Title-heading coverage now counts distinct synonym-supported topic concepts and avoids elevating unrelated topics on one incidental word.
-- Debug QA now separately reports *goldAnchors* and *verifiedAnchors*. Mere in-bounds turquoise span is not considered proof of answer accuracy. Only **20 of the currently committed 100 reference cases have a gold answer anchor**.
+- Debug QA now separately reports *goldAnchors* and *verifiedAnchors*. Mere in-bounds turquoise span is not considered proof of answer accuracy. The gold reference assets now contain **100/100 specified answer anchor phrases**, with 80 additional anchors matched against the known 15,063-law local corpus and 20 previously verified in source-only CI. This proves source-phrase existence, not that the model highlights those phrases.
 - Added independent 100-question model experiment at `scripts/experiment_tiny_hebrew_e5_100.py`, with workflow `.github/workflows/mishneh-e5-tiny-retrieval.yml`. The experiment uses Python only; it neither builds an APK nor changes Android dependencies.
 - Experiment Actions run: https://github.com/AM246897531/virtual-garden-3d/actions/runs/43096714626 . At last inspection it remained queued. **Do not infer a result from a queued workflow.**
 - Previous source-only QA run 43095038196 completed its core source-integrity tests but its artifact-upload step failed / final run status appeared stale. Earlier Python-only reference run 43090673753 succeeded. These tests are not retrieval accuracy.
@@ -60,3 +60,10 @@ The user authorized exploring smaller local models and auxiliary open-licensed l
 3. Collect independently checked target passages for all 100 questions, rather than assuming any in-bounds highlight is correct.
 4. Instrument real Android Top-1, top-k, span accuracy and latency **only after user separately authorizes compilation**.
 5. No 100/100 claim, no Drive release until runtime and answer-span evidence exist.
+
+### Fully specified 100-case turquoise QA assets — latest
+- `scripts/quality_natural_100.json` and `app/src/debug/assets/quality_natural_100.json` now each have 100 explicit expected answer snippets. They are **source-sourced gold anchors** and were selected by reading the corresponding actual Rambam law.
+- Added bounded span requirement: `0 < original_utf16_end - original_utf16_start <= 360`. Avoid using whole long laws as supposedly accurate highlights.
+- `scripts/verify_android_100_accuracy.py` is the future hard acceptance gate: it requires all 100 individual Android cases, exact expected source, matching gold answer snippet and bounded source highlight. It is **not run on a new Android build** because compiling is still disallowed.
+- The 100 anchors are minimal independently selected answer evidence. For complex multi-part questions a single anchor cannot, by itself, prove every aspect of the answer is highlighted; full expert checks and additional independent unseen test cases are required before claiming truly comprehensive accuracy.
+- This update did **not** compile, install or upload an APK. The pending Python-only runs may be delayed by GitHub Actions and must be checked for actual success before attributing scores.
