@@ -16,7 +16,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install corpus build dependency
-        run: python -m pip install requests==2.32.3 numpy==2.1.3 scipy==1.14.1 gensim==4.4.0
+        run: python -m pip install requests==2.32.3 numpy==2.1.3 scipy==1.14.1 gensim==4.4.0 scikit-learn==1.5.2
       - name: Test Hebrew normalization
         run: python scripts/test_corpus_utils.py
       - name: Download and verify FULL public-domain Hebrew corpus; prebuild FTS index
@@ -25,6 +25,10 @@ jobs:
         run: python scripts/build_passage_index.py
       - name: Verify precise source offsets and passage index integrity
         run: python scripts/test_passage_index.py
+      - name: Build independent char-trigram search index from authentic Rambam corpus
+        run: python scripts/build_char_trigram_index.py
+      - name: Verify character index and natural-language candidate recall
+        run: python scripts/test_char_trigram_100.py
       - name: Train and package tiny 100-percent-offline Hebrew embedding model
         run: python scripts/build_semantic_index.py
       - name: Verify local learned model and search results
@@ -64,6 +68,7 @@ jobs:
           cp artifacts/corpus_report.json artifacts/delivery/
           cp artifacts/semantic_report.json artifacts/delivery/
           cp app/src/main/assets/hebrew_semantic.bin artifacts/delivery/
+          cp app/src/main/assets/rambam_char3.bin artifacts/delivery/
           cp app/src/main/assets/rambam.sqlite artifacts/delivery/
           git archive --format=zip -o artifacts/delivery/MishnehTorah-Android-Source.zip HEAD
           cp ATTRIBUTION_AND_LICENSES.md artifacts/delivery/
