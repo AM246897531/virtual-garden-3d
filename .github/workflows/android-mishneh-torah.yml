@@ -33,6 +33,8 @@ jobs:
         run: python scripts/build_semantic_index.py
       - name: Verify local learned model and search results
         run: python scripts/test_semantic_index.py
+      - name: Build independent original-text gold answer offsets for later debug QA
+        run: python scripts/build_gold_answer_offsets.py
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
