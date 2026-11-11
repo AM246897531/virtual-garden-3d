@@ -60,6 +60,11 @@ def main():
     db.executescript('''
     DROP TABLE IF EXISTS passage_fts;
     DROP TABLE IF EXISTS passages;
+    DROP TABLE IF EXISTS chapter_leads;
+    DROP TABLE IF EXISTS passage_terms;
+    DROP TABLE IF EXISTS section_terms;
+    DROP TABLE IF EXISTS section_totals;
+    DROP TABLE IF EXISTS global_terms;
     CREATE TABLE passages (id INTEGER PRIMARY KEY, law_id INTEGER NOT NULL,
       start INTEGER NOT NULL, end INTEGER NOT NULL, norm TEXT NOT NULL);
     CREATE INDEX passages_by_law ON passages(law_id);
@@ -68,6 +73,8 @@ def main():
     CREATE TABLE section_terms(section TEXT NOT NULL, term TEXT NOT NULL, tf INTEGER NOT NULL, PRIMARY KEY(section,term)) WITHOUT ROWID;
     CREATE TABLE section_totals(section TEXT PRIMARY KEY, total INTEGER NOT NULL);
     CREATE TABLE global_terms(term TEXT PRIMARY KEY, tf INTEGER NOT NULL);
+    CREATE TABLE chapter_leads(section TEXT NOT NULL, chapter INTEGER NOT NULL,
+      intro TEXT NOT NULL, PRIMARY KEY(section, chapter)) WITHOUT ROWID;
     ''')
     count=0
     docfreq=Counter()
@@ -93,7 +100,16 @@ def main():
         ((sec,term,n) for sec,terms in section_counts.items() for term,n in terms.items()))
     db.executemany("INSERT INTO section_totals(section,total) VALUES(?,?)", section_lengths.items())
     db.executemany("INSERT INTO global_terms(term,tf) VALUES(?,?)", global_counts.items())
+    for section, chapter in db.execute('SELECT section,chapter FROM laws GROUP BY section,chapter'):
+        opening = [row[0] for row in db.execute(
+            'SELECT norm FROM laws WHERE section=? AND chapter=? ORDER BY halakhah LIMIT 3',
+            (section,chapter))]
+        title = section.split('הלכות ',1)[-1]
+        intro = (title+' ')*3+' '.join(opening)
+        db.execute('INSERT INTO chapter_leads(section,chapter,intro) VALUES(?,?,?)',
+                   (section,chapter,intro))
     db.commit()
+    assert db.execute('SELECT COUNT(*) FROM chapter_leads').fetchone()[0]>=1000
     assert db.execute('SELECT count(*) FROM passages').fetchone()[0]==count
     assert db.execute('PRAGMA integrity_check').fetchone()[0]=='ok'
     db.execute('ANALYZE')

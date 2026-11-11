@@ -76,6 +76,77 @@ internal class PreciseEvidenceSearch(
         .distinct().take(6).joinToString(" OR ") { "$it*" }
         .let { if (it.contains(" OR ")) "($it)" else it }
 
+    /** Label-free chapter route. Source corpus headings and opening laws only. */
+    private data class ChapterLead(
+        val section: String, val chapter: Int, val title: List<String>,
+        val grams: IntArray, val magnitude: Float
+    )
+    private fun chapterGrams(value: String): IntArray {
+        val normalized = HebrewSearch.normalize(value)
+        val all = HashSet<Int>()
+        for (width in 2..4) {
+            if (normalized.length < width) continue
+            for (i in 0..normalized.length-width)
+                all.add(normalized.substring(i,i+width).hashCode())
+        }
+        return all.toIntArray().apply { sort() }
+    }
+    private val chaptersWithWeights: Pair<List<ChapterLead>,Map<Int,Float>> by lazy {
+        val source = ArrayList<Triple<String,Int,IntArray>>()
+        try {
+            db.rawQuery("SELECT section,chapter,intro FROM chapter_leads",null).use { c ->
+                while (c.moveToNext()) source.add(Triple(c.getString(0),c.getInt(1),
+                    chapterGrams(c.getString(2))))
+            }
+        } catch (ex: SQLiteException) {
+            Log.w("RambamSearch","Chapter context unavailable",ex)
+        }
+        val frequency=HashMap<Int,Int>()
+        for ((_,_,grams) in source) for (g in grams)
+            frequency[g]=(frequency[g]?:0)+1
+        val weights=frequency.mapValues { (_,n) ->
+            ln((source.size+1.0)/(n+1.0)).toFloat().coerceAtLeast(.15f)
+        }
+        val leads=source.map { (section,chapter,grams) ->
+            val weightNorm=grams.sumOf { g ->
+                val w=(weights[g]?:0f).toDouble();w*w
+            }.toFloat().coerceAtLeast(.0001f)
+            val title=HebrewSearch.normalize(section.substringAfter("הלכות "))
+                .split(' ').filter { it.length>=3 }
+            ChapterLead(section,chapter,title,grams,weightNorm)
+        }
+        leads to weights
+    }
+    private fun chapterContextCandidates(query: String, limit: Int = 20): List<Pair<String,Int>> {
+        val (leads,weights)=chaptersWithWeights
+        if (leads.isEmpty()) return emptyList()
+        val grams=chapterGrams(query)
+        if (grams.isEmpty()) return emptyList()
+        val queryWords=HebrewSearch.normalize(query).split(' ').toHashSet()
+        return leads.asSequence().map { lead ->
+            var dot=0f
+            for (gram in grams) {
+                if (lead.grams.binarySearch(gram)>=0) {
+                    val w=weights[gram]?:0f
+                    dot+=w*w
+                }
+            }
+            val titleBoost=.22f*lead.title.count { it in queryWords }
+            val similarity=dot/kotlin.math.sqrt(lead.magnitude)+titleBoost
+            Triple(lead.section,lead.chapter,similarity)
+        }.sortedByDescending { it.third }.take(limit)
+            .map { it.first to it.second }.toList()
+    }
+    private fun addChapterPassages(query: String, output: MutableSet<Int>) {
+        // Only source-derived chapter candidates, never a test question -> law map.
+        for ((section,chapter) in chapterContextCandidates(query)) {
+            db.rawQuery("SELECT p.id FROM passages p JOIN laws l ON p.law_id=l.id " +
+                "WHERE l.section=? AND l.chapter=?",arrayOf(section,chapter.toString())).use { c ->
+                while (c.moveToNext()) output.add(c.getInt(0))
+            }
+        }
+    }
+
     private fun candidateIds(analysis: SearchLanguage.Analysis): LinkedHashSet<Int> {
         val terms=analysis.terms.sortedByDescending { weight(it) }.take(8)
         val out=LinkedHashSet<Int>(4500)
@@ -96,6 +167,7 @@ internal class PreciseEvidenceSearch(
         }
         if (groups.size>=2 && out.size<10000)
             ftsIds(groups.take(6).joinToString(" OR "),1800,out)
+        addChapterPassages(analysis.normalized,out)
         return out
     }
 

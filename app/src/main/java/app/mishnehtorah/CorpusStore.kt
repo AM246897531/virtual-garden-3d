@@ -62,7 +62,7 @@ class CorpusStore private constructor(
             // Previous builds shipped a differently-versioned database with the
             // same app ID. Migrate once on upgrade instead of silently reusing it.
             val prefs = context.getSharedPreferences("corpus_install", Context.MODE_PRIVATE)
-            val corpusEpoch = 4
+            val corpusEpoch = 5
             if (!destination.exists() || destination.length() == 0L ||
                 prefs.getInt("corpus_epoch", 0) != corpusEpoch) {
                 val temporary = File(context.filesDir, "rambam.sqlite.part")

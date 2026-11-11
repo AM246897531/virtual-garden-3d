@@ -9,6 +9,7 @@ assert db.execute('pragma integrity_check').fetchone()[0]=='ok'
 assert db.execute('select count(*) from laws').fetchone()[0] >= 15000
 n=db.execute('select count(*) from passages').fetchone()[0]
 assert n>=25000,n
+assert db.execute('SELECT COUNT(*) FROM chapter_leads').fetchone()[0]>=1000
 for id,body,a,b,norm in db.execute('select p.id,l.body,p.start,p.end,p.norm from passages p join laws l on p.law_id=l.id'):
     assert 0<=a<b<=len(body),(id,a,b,len(body))
     assert normalize(body[a:b])==norm,id
