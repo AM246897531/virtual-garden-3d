@@ -129,8 +129,8 @@ internal object SearchLanguage {
     /** Conservative morphology: no arbitrary 3-letter root conflation. */
     fun stem(s: String): String {
         var w=HebrewSearch.normalize(s)
-        if (w.length>5 && w.firstOrNull() in affixes) w=w.substring(1)
-        if (w.length>5 && w.firstOrNull() in affixes && s.startsWith("ו")) w=w.substring(1)
+        if (w.length>5 && w[0] in affixes) w=w.substring(1)
+        if (w.length>5 && w[0] in affixes && s.startsWith("ו")) w=w.substring(1)
         if (w.length>5 && (w.endsWith("ימ") || w.endsWith("ות"))) w=w.dropLast(2)
         else if (w.length>5 && (w.endsWith("יה") || w.endsWith("ה"))) w=w.dropLast(1)
         return w
