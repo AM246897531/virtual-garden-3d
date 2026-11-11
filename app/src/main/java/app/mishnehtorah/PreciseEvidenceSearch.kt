@@ -240,15 +240,24 @@ internal class PreciseEvidenceSearch(
     }
 
     private fun sectionTitleBoost(section: String, analysis: SearchLanguage.Analysis): Float {
+        // A subject explicitly named in the question is stronger evidence
+        // than an incidental lexical match in an unrelated halakhah.
+        // All labels come from the corpus's own section headings.
         val title=HebrewSearch.normalize(section.removePrefix("משנה תורה, הלכות "))
             .split(' ').filter { it.length>=3 && it!="הלכות" && it!="תורה" }
+            .map { it.removePrefix("ו") }
         if (title.isEmpty()) return 0f
-        var total=0f
+        val qwords=analysis.normalized.split(' ').map { it.removePrefix("ו") }.toHashSet()
+        val direct=title.count { it in qwords }
+        val fullPhrase=title.size>1 &&
+            analysis.normalized.contains(title.joinToString(" "))
+        var synonymous=0f
         for (term in analysis.terms) {
-            if (term.alternatives.any { alt -> title.any { word -> SearchLanguage.matches(alt,word)>.65f } })
-                total+=10f*term.weight
+            if (term.alternatives.any { alt ->
+                title.any { word -> SearchLanguage.matches(alt,word)>.65f }
+            }) synonymous+=9f*term.weight
         }
-        return minOf(23f,total)
+        return minOf(64f,synonymous+direct*17f+(if (fullPhrase) 34f else 0f))
     }
 
     private fun termMatch(group: SearchLanguage.Term, tokens: List<String>): Float {
@@ -397,13 +406,28 @@ internal class PreciseEvidenceSearch(
         val passages=loadPassages(ids)
         if (passages.isEmpty()) return emptyList()
         val lawSections=HashMap<Int,String>()
+        val lawChapters=HashMap<Int,Int>()
+        val lawOrdinals=HashMap<Int,Int>()
         val affinities=sectionAffinities(analysis)
         val sectionBoostCache=HashMap<String,Float>()
+        // The opening of each chapter is an actual Rambam source passage.
+        // Its similarity helps disambiguate a specific chapter, but it can
+        // never independently supply or fabricate a halakhic answer.
+        val chapterBonuses=chapterContextCandidates(analysis.normalized,45)
+            .mapIndexed { rank,part ->
+                part to (if (rank<7) 29f-rank*2f
+                    else 17f/(1f+(rank-6)*.13f))
+            }.toMap()
         for (batch in passages.map { it.lawId }.distinct().chunked(250)) {
             val placeholders=batch.joinToString(",") { "?" }
-            db.rawQuery("SELECT id,section FROM laws WHERE id IN ($placeholders)",
+            db.rawQuery("SELECT id,section,chapter,halakhah FROM laws WHERE id IN ($placeholders)",
                 batch.map { it.toString() }.toTypedArray()).use { c ->
-                while (c.moveToNext()) lawSections[c.getInt(0)]=c.getString(1)
+                while (c.moveToNext()) {
+                    val id=c.getInt(0)
+                    lawSections[id]=c.getString(1)
+                    lawChapters[id]=c.getInt(2)
+                    lawOrdinals[id]=c.getInt(3)
+                }
             }
         }
         val accepted=HashMap<Int,Pair<Passage,Evidence>>()
@@ -419,7 +443,16 @@ internal class PreciseEvidenceSearch(
             val sectionBonus=sectionBoostCache.getOrPut(sec) {
                 (affinities[sec]?:0f)*40f+sectionTitleBoost(sec,analysis)
             }
-            val rankedEvidence=score.copy(score=score.score+sectionBonus)
+            val chapterBonus=chapterBonuses[sec to (lawChapters[passage.lawId]?:0)]?:0f
+            // Definition/overview questions usually begin at the chapter's
+            // introductory source. This small prior never overrides direct
+            // evidence for a specific exception, deadline, or condition.
+            val overview = analysis.intent==SearchLanguage.Intent.GENERAL ||
+                analysis.intent==SearchLanguage.Intent.REQUIREMENT
+            val sourceOpeningBonus=if (overview && !analysis.deadlineOverrun &&
+                lawOrdinals[passage.lawId]==1) 5f else 0f
+            val rankedEvidence=score.copy(
+                score=score.score+sectionBonus+chapterBonus+sourceOpeningBonus)
             val old=accepted[passage.lawId]
             if (old==null || rankedEvidence.score>old.second.score)
                 accepted[passage.lawId]=passage to rankedEvidence
