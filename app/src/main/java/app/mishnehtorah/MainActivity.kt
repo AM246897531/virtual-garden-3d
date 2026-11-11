@@ -57,12 +57,15 @@ class MainActivity : ComponentActivity() {
         val initialQuery = intent.getStringExtra("debug_query").orEmpty()
         val debugTypeahead = intent.getBooleanExtra("debug_typeahead", false)
         val debugQuality = intent.getBooleanExtra("debug_quality_50", false)
-        setContent { RambamApp(initialQuery, debugTypeahead, debugQuality) }
+        val debugQuality100 = intent.getBooleanExtra("debug_quality_100", false)
+        setContent { RambamApp(initialQuery, debugTypeahead,
+            debugQuality || debugQuality100, debugQuality100) }
     }
 }
 
 @Composable
-fun RambamApp(initialQuery: String = "", debugTypeahead: Boolean = false, debugQuality: Boolean = false) {
+fun RambamApp(initialQuery: String = "", debugTypeahead: Boolean = false,
+              debugQuality: Boolean = false, debugQuality100: Boolean = false) {
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("reading_preferences", 0) }
     var dark by rememberSaveable { mutableStateOf(prefs.getBoolean("dark", false)) }
@@ -123,9 +126,10 @@ fun RambamApp(initialQuery: String = "", debugTypeahead: Boolean = false, debugQ
                     // Two distinct regression sets: the old curated questions
                     // AND an unseen cross-section set. Report exact Top-1 accuracy;
                     // never silently count semantic proximity as a correct source.
-                    for ((asset, prefix) in listOf(
-                        "quality_full_110.json" to "Q110"
-                    )) {
+                    val suite = if (debugQuality100)
+                        listOf("quality_natural_100.json" to "Q100")
+                    else listOf("quality_full_110.json" to "Q110")
+                    for ((asset, prefix) in suite) {
                         val raw = context.assets.open(asset).bufferedReader().use { it.readText() }
                         val cases = JSONArray(raw)
                         val timings = ArrayList<Long>()
@@ -170,7 +174,7 @@ fun RambamApp(initialQuery: String = "", debugTypeahead: Boolean = false, debugQ
                             "max_ms=${sorted.last()}")
                     }
                 } catch (error: Throwable) {
-                    Log.e("RambamQuality", "Q110_FAILED_TO_RUN", error)
+                    Log.e("RambamQuality", if (debugQuality100) "Q100_FAILED_TO_RUN" else "Q110_FAILED_TO_RUN", error)
                 }
             }
         }
