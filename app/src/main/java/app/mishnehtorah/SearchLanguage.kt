@@ -324,11 +324,16 @@ internal object SearchLanguage {
             output.add("גובה סוכה שיעור עשרים אמה טפחים גבוהה פסולה")
         }
         val animalQuery=listOf("בעלי חיימ","בהמות","חיות").any { q.contains(it) }
-        val kosherQuery=listOf("באכילה","לאכול","אכיל","סימנימ").any { q.contains(it) }
-        if (animalQuery && kosherQuery)
+        val eatingQuestion=listOf("באכילה","לאכול","אכיל").any { q.contains(it) }
+        val identificationQuestion=listOf("סימנימ","סימני","סימנ","כשר","טמא","טהור").any {
+            q.contains(it)
+        } || (eatingQuestion && q.contains("מותר"))
+        if (animalQuery && identificationQuestion)
             output.add("סימנים של בהמה חיה עוף דגים טהור טמא מאכלות")
         val socialQuery=listOf("חברימ","רעיי","סביבה","חברתי").any { q.contains(it) }
-        val influenceQuery=listOf("משפיע","מושפע","מתנהג","השפעה","סביבה").any { q.contains(it) }
+        val influenceQuery=listOf("משפיע","מושפע","מתנהג","השפעה","התנהגות").any {
+            q.contains(it)
+        }
         if (socialQuery && influenceQuery)
             output.add("דעות הנהגות חכמים חברים רעים השפעה סביבה מעשים")
         // Whole words only. Substring tests would mistake "ערב" for "רב"
