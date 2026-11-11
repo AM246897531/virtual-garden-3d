@@ -1,0 +1,42 @@
+name: Tiny Hebrew E5 source retrieval experiment (NO ANDROID BUILD)
+on:
+  push:
+    branches: [feature/mishneh-torah-search-100qa]
+    paths:
+      - .github/workflows/mishneh-e5-tiny-retrieval.yml
+      - scripts/experiment_tiny_hebrew_e5_100.py
+  workflow_dispatch:
+jobs:
+  experiment:
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    permissions:
+      contents: read
+    env:
+      HEBREW_EMBED_MODEL: alphaedge-ai/multilingual-e5-small-heb-32768
+      TOKENIZERS_PARALLELISM: 'false'
+      OMP_NUM_THREADS: '4'
+      OPENBLAS_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install independent offline experiment dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install 'requests==2.32.3' 'sentence-transformers>=3.4,<6' 'scikit-learn>=1.5,<2' 'numpy>=1.26,<3'
+      - name: Build source-only public-domain corpus for experimental offline search
+        run: python scripts/build_corpus.py
+      - name: Benchmark 100 questions with compact Hebrew E5 embeddings, not APK
+        run: python scripts/experiment_tiny_hebrew_e5_100.py
+      - name: Preserve experimental data, including diagnosis when unsuccessful
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: HebE5-Tiny-100-Source-Retrieval-NO-APK
+          path: |
+            artifacts/experimental_e5_100.json
+            artifacts/corpus_report.json
+          if-no-files-found: warn
+          retention-days: 30
