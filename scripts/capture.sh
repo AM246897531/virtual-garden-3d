@@ -26,7 +26,6 @@ start_query() {
   sleep 6
   adb shell pidof "$PKG" > /dev/null
 }
-adb shell input keyevent 4 || true
 sleep 2
 screenshot 01-home
 S=$(adb shell wm size | tr -d '\r' | grep -oE '[0-9]+x[0-9]+' | tail -1)
@@ -39,6 +38,7 @@ start_query "שכחתי יעלה ויבוא בברכת המזון"
 screenshot 03-birkat-hamazon-query
 tap $((W/2)) $((H*43/100))
 screenshot 04-opened-search-result
+tap $((W*8/100)) $((H*7/100))
 start_query "מה הדין אדם ששכח להזכיר ראש חודש"
 screenshot 05-paraphrase-query
 start_query "ר״ח ברכה חוזר"
@@ -61,9 +61,9 @@ adb shell am start -n "$PKG/.MainActivity"
 sleep 5
 tap $((W*38/100)) $((H-95))
 screenshot 12-bookmarks
-tap $((W*15/100)) $((H-95))
+tap $((W*22/100)) $((H-95))
 screenshot 13-settings
-tap $((W*78/100)) $((H*24/100))
+tap $((W*20/100)) $((H*24/100))
 screenshot 14-dark-mode
 adb shell settings put global airplane_mode_on 1
 adb shell am broadcast -a android.intent.action.AIRPLANE_MODE --ez state true >/dev/null || true
