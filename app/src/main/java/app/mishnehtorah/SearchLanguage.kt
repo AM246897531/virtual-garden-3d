@@ -25,6 +25,32 @@ internal object SearchLanguage {
     ).map { HebrewSearch.normalize(it) }.toSet()
     // Every mapping captures a synonym or spelling difference, never a predetermined source.
     private val synonyms: Map<String, List<String>> = mapOf(
+        // Everyday Hebrew often describes an event, while Rambam names its
+        // legal concept. These are language bridges, never source-ID mappings.
+        "בחירה" to listOf("רשות", "ברשות", "רצונו", "רצה", "בחירתו"),
+        "לבחור" to listOf("רשות", "רצה", "בחירה", "רצונו"),
+        "להחליט" to listOf("רשות", "רצה", "בחירה", "רצונו"),
+        "סביבה" to listOf("דעות", "מעשיו", "חבריו", "רעיו", "הולך"),
+        "חברים" to listOf("חבריו", "חביריו", "רעיו", "רעים"),
+        "חבריי" to listOf("חבריו", "חביריו", "רעיו", "רעים"),
+        "מושפע" to listOf("נמשך", "נמשכ", "דעותיו", "מעשיו", "אחר"),
+        "משפיעים" to listOf("נמשך", "דעותיו", "חבריו", "מעשיו"),
+        "חצר" to listOf("חצר", "חצרות", "חצירות", "רשות"),
+        "משותפת" to listOf("שותפין", "שותפימ", "חצרות", "יחד"),
+        "טלטול" to listOf("לטלטל", "מטלטל", "מוציא", "להוציא", "עירוב"),
+        "לטלטל" to listOf("מוציא", "להוציא", "מטלטל", "ערוב", "עירוב"),
+        "עירוב" to listOf("ערוב", "עירוב", "מערבינ", "ערב"),
+        "קדקד" to listOf("קדקד", "ראש", "שערות", "שער"),
+        "מצח" to listOf("קדקד", "מצח", "ראש", "שער"),
+        "מעל" to listOf("מעל", "למעלה", "על", "קדקד"),
+        "הזריחה" to listOf("הנצ", "החמה", "זריחה", "תנץ"),
+        "זריחה" to listOf("הנצ", "החמה", "תנץ"),
+        "החמצתי" to listOf("איחר", "אחר", "עבר", "לאחר"),
+        "סימנים" to listOf("סימנ", "סימני", "מעלה", "מפרסת"),
+        "כשרות" to listOf("מותרות", "טמאות", "טהורות", "סימנ"),
+        "להכשיר" to listOf("כשר", "מותר", "ראוי"),
+        "נשבר" to listOf("נשבר", "שבר", "אונס", "נאנס"),
+        "נשברה" to listOf("נשבר", "שבר", "אונס", "נאנס"),
         "שכח" to listOf("שכח", "שכחתי", "שכחה", "נזכר", "הזכיר", "הזכרה"),
         "שכחתי" to listOf("שכח", "שכחה", "נזכר", "הזכיר"),
         // General late/expired-time language, not references to any particular law.
