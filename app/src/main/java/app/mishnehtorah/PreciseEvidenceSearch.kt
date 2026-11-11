@@ -219,28 +219,33 @@ internal class PreciseEvidenceSearch(
      * A paragraph with scattered vocabulary is not necessarily an answer. */
     private fun proximityEvidence(analysis: SearchLanguage.Analysis, words: List<String>): Float {
         if (analysis.terms.size < 2 || words.size < 3) return 0f
-        val found = ArrayList<IntArray>()
-        for (term in analysis.terms) {
-            val locations = ArrayList<Int>()
-            for (i in words.indices) {
-                if (term.alternatives.any { alt -> SearchLanguage.matches(alt, words[i]) >= .80f }) {
-                    locations.add(i)
-                    if (locations.size >= 25) break
-                }
+        // A source-grounded short-window cohesion bonus. Reuse normalized
+        // exact aliases and conservative word stems instead of repeating
+        // expensive fuzzy comparisons for every token of every passage.
+        val aliases = HashMap<String, Int>()
+        for ((index, term) in analysis.terms.withIndex()) {
+            val bit = 1 shl index
+            for (variant in term.alternatives) {
+                if (variant.length < 3) continue
+                aliases[variant] = (aliases[variant] ?: 0) or bit
+                val stem = SearchLanguage.stem(variant)
+                if (stem.length >= 4) aliases[stem] = (aliases[stem] ?: 0) or bit
             }
-            if (locations.isNotEmpty()) found.add(locations.toIntArray())
         }
-        if (found.size < 2) return 0f
+        val masks = IntArray(words.size) { i ->
+            val w = words[i]
+            (aliases[w] ?: 0) or (aliases[SearchLanguage.stem(w)] ?: 0)
+        }
         var best = 0
-        val length = words.size
-        for (from in 0 until length) {
-            val to = minOf(length, from + 13)
-            val count = found.count { indices -> indices.any { it >= from && it < to } }
-            if (count > best) best = count
-            if (best == found.size) break
+        for (start in words.indices) {
+            var union = 0
+            for (i in start until minOf(words.size, start + 13)) union = union or masks[i]
+            best = maxOf(best, Integer.bitCount(union))
+            if (best == analysis.terms.size) break
         }
-        val ratio = best.toFloat()/analysis.terms.size
-        return if (best >= 2) 13f*ratio*ratio else 0f
+        if (best < 2) return 0f
+        val ratio = best.toFloat() / analysis.terms.size
+        return 13f * ratio * ratio
     }
 
     private data class Evidence(val score: Float, val matched: Int, val coverage: Float)
