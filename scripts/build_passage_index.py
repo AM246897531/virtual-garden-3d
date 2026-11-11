@@ -7,7 +7,7 @@ No answers or textual substitutions are generated, and original law ids stay int
 from __future__ import annotations
 import sqlite3, re, sys
 from pathlib import Path
-from collections import Counter
+from collections import Counter,defaultdict
 from build_corpus import normalize
 
 DB = Path(__file__).resolve().parents[1] / 'app/src/main/assets/rambam.sqlite'
@@ -35,19 +35,19 @@ def split_passages(body: str) -> list[tuple[int,int]]:
     """
     if not body.strip(): return []
     n=len(body)
-    if n<=210: return [(0,n)]
+    if n<=320: return [(0,n)]
     out=[]; start=0
     while start<n:
         remain=n-start
-        if remain<=215:
+        if remain<=320:
             if not out or out[-1][1]<n: out.append((start,n))
             break
-        lo=start+115
-        hi=min(n,start+245)
-        end=word_boundary(body, start+190, lo,hi)
-        if end<=start+100: end=min(n,start+180)
+        lo=start+145
+        hi=min(n,start+355)
+        end=word_boundary(body, start+290, lo,hi)
+        if end<=start+130: end=min(n,start+275)
         out.append((start,end))
-        next_start=max(start+95,end-45)
+        next_start=max(start+120,end-85)
         if next_start>=n: break
         start=next_start
     return list(dict.fromkeys(out))
@@ -65,9 +65,20 @@ def main():
     CREATE INDEX passages_by_law ON passages(law_id);
     CREATE VIRTUAL TABLE passage_fts USING fts4(norm,tokenize=unicode61);
     CREATE TABLE passage_terms(term TEXT PRIMARY KEY, df INTEGER NOT NULL);
+    CREATE TABLE section_terms(section TEXT NOT NULL, term TEXT NOT NULL, tf INTEGER NOT NULL, PRIMARY KEY(section,term)) WITHOUT ROWID;
+    CREATE TABLE section_totals(section TEXT PRIMARY KEY, total INTEGER NOT NULL);
+    CREATE TABLE global_terms(term TEXT PRIMARY KEY, tf INTEGER NOT NULL);
     ''')
     count=0
     docfreq=Counter()
+    section_counts=defaultdict(Counter)
+    global_counts=Counter()
+    section_lengths=Counter()
+    for section,norm in db.execute("SELECT section,norm FROM laws"):
+        tokens=norm.split()
+        section_counts[section].update(tokens)
+        global_counts.update(tokens)
+        section_lengths[section]+=len(tokens)
     for law_id,body in db.execute('SELECT id,body FROM laws'):
         for a,b in split_passages(body):
             segment=normalize(body[a:b]);
@@ -78,6 +89,10 @@ def main():
             docfreq.update(set(segment.split()))
             count+=1
     db.executemany("INSERT INTO passage_terms(term,df) VALUES(?,?)", docfreq.items())
+    db.executemany("INSERT INTO section_terms(section,term,tf) VALUES(?,?,?)",
+        ((sec,term,n) for sec,terms in section_counts.items() for term,n in terms.items()))
+    db.executemany("INSERT INTO section_totals(section,total) VALUES(?,?)", section_lengths.items())
+    db.executemany("INSERT INTO global_terms(term,tf) VALUES(?,?)", global_counts.items())
     db.commit()
     assert db.execute('SELECT count(*) FROM passages').fetchone()[0]==count
     assert db.execute('PRAGMA integrity_check').fetchone()[0]=='ok'

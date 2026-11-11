@@ -124,7 +124,7 @@ fun RambamApp(initialQuery: String = "", debugTypeahead: Boolean = false, debugQ
                     // AND an unseen cross-section set. Report exact Top-1 accuracy;
                     // never silently count semantic proximity as a correct source.
                     for ((asset, prefix) in listOf(
-                        "quality_50.json" to "Q50", "quality_unseen_30.json" to "Q30"
+                        "quality_full_110.json" to "Q110"
                     )) {
                         val raw = context.assets.open(asset).bufferedReader().use { it.readText() }
                         val cases = JSONArray(raw)
@@ -169,7 +169,7 @@ fun RambamApp(initialQuery: String = "", debugTypeahead: Boolean = false, debugQ
                             "max_ms=${sorted.last()}")
                     }
                 } catch (error: Throwable) {
-                    Log.e("RambamQuality", "Q50_FAILED_TO_RUN", error)
+                    Log.e("RambamQuality", "Q110_FAILED_TO_RUN", error)
                 }
             }
         }

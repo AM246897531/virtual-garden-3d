@@ -22,7 +22,7 @@ internal class PreciseEvidenceSearch(
                             val confidence: Float, val matched: Int, val coverage: Float)
     private data class Passage(val id: Int, val lawId: Int,
                                val start: Int, val end: Int, val norm: String)
-    private val totalPassages = 42028f // The actual count is checked dynamically below.
+    private val totalPassages = 1f // Actual count is read from the index.
     private val size: Float by lazy {
         db.rawQuery("SELECT count(*) FROM passages", null).use { c ->
             if (c.moveToFirst()) c.getInt(0).toFloat() else totalPassages
@@ -37,6 +37,9 @@ internal class PreciseEvidenceSearch(
         val positive = term.alternatives.filter { it.length>=3 }
         val df = positive.minOfOrNull { documentFrequency(it).takeIf { n -> n>0 } ?: Int.MAX_VALUE }
         val usable = if (df == null || df == Int.MAX_VALUE) 60 else df
+        // Spoken paraphrases absent from the corpus must not overpower
+        // actual source phrases with an artificial ultra-high IDF.
+        if (df == null || df == Int.MAX_VALUE) return .65f * term.weight
         return (ln((size + 10f).toDouble()/(usable + 1f).toDouble()).toFloat())
             .coerceIn(1.1f,6.2f) * term.weight
     }
@@ -55,7 +58,7 @@ internal class PreciseEvidenceSearch(
 
     private fun groupQuery(term: SearchLanguage.Term): String = term.alternatives
         .filter { it.length>=3 && it.length<=30 }
-        .distinct().take(3).joinToString(" OR ") { "$it*" }
+        .distinct().take(5).joinToString(" OR ") { "$it*" }
         .let { if (it.contains(" OR ")) "($it)" else it }
 
     private fun candidateIds(analysis: SearchLanguage.Analysis): LinkedHashSet<Int> {
@@ -72,12 +75,12 @@ internal class PreciseEvidenceSearch(
         // Single highly specific topic and non-contiguous paraphrases also
         // need a route into the candidate pool. This is NOT sorted by rowid
         // as the final answer; every candidate is independently reranked.
-        for (group in groups.take(5)) {
-            ftsIds(group,if (out.size>2400) 300 else 850,out)
-            if (out.size>6000) break
+        for (group in groups.take(8)) {
+            ftsIds(group,if (out.size>6500) 800 else 2400,out)
+            if (out.size>14500) break
         }
-        if (groups.size>=2 && out.size<4400)
-            ftsIds(groups.take(4).joinToString(" OR "),1300,out)
+        if (groups.size>=2 && out.size<10000)
+            ftsIds(groups.take(6).joinToString(" OR "),1800,out)
         return out
     }
 
@@ -105,6 +108,62 @@ internal class PreciseEvidenceSearch(
         }
     }
 
+    /**
+     * Unsupervised topic likelihood built from EVERY law in each Rambam section.
+     * It resolves homographs such as 'המקדש' (a person performing kiddushin vs
+     * the Temple), without mapping any question to a preselected source.
+     */
+    private fun sectionAffinities(analysis: SearchLanguage.Analysis): Map<String,Float> {
+        val queried=analysis.terms.flatMap { it.alternatives }.filter { it.length>=3 }
+            .distinct().take(75)
+        if (queried.isEmpty()) return emptyMap()
+        val sizeOfSection=HashMap<String,Int>()
+        db.rawQuery("SELECT section,total FROM section_totals",null).use { c ->
+            while (c.moveToNext()) sizeOfSection[c.getString(0)]=c.getInt(1)
+        }
+        val corpusLength=sizeOfSection.values.sum().toDouble().coerceAtLeast(1.0)
+        val placeholders=queried.joinToString(",") { "?" }
+        val args=queried.toTypedArray()
+        val global=HashMap<String,Int>()
+        db.rawQuery("SELECT term,tf FROM global_terms WHERE term IN ($placeholders)",args).use { c ->
+            while (c.moveToNext()) global[c.getString(0)]=c.getInt(1)
+        }
+        val bySection=HashMap<String,MutableMap<String,Int>>()
+        db.rawQuery("SELECT section,term,tf FROM section_terms WHERE term IN ($placeholders)",args).use { c ->
+            while (c.moveToNext()) {
+                bySection.getOrPut(c.getString(0)) { HashMap() }[c.getString(1)]=c.getInt(2)
+            }
+        }
+        val affinities=HashMap<String,Float>()
+        for ((section,totalWords) in sizeOfSection) {
+            if (totalWords<1) continue
+            val freq=bySection[section].orEmpty()
+            var score=0f
+            for (term in analysis.terms) {
+                val count=term.alternatives.maxOfOrNull { freq[it]?:0 }?:0
+                if (count<1) continue
+                val corpusFreq=term.alternatives.sumOf { global[it]?:0 }.coerceAtLeast(1)
+                val ratio=(count.toDouble()/totalWords)*corpusLength/corpusFreq
+                score += (kotlin.math.ln(1.0+ratio).toFloat())*term.weight
+            }
+            if (score>0f) affinities[section]=score
+        }
+        val maxScore=affinities.values.maxOrNull()?:1f
+        return affinities.mapValues { (_,score)->score/maxScore }
+    }
+
+    private fun sectionTitleBoost(section: String, analysis: SearchLanguage.Analysis): Float {
+        val title=HebrewSearch.normalize(section.removePrefix("משנה תורה, הלכות "))
+            .split(' ').filter { it.length>=3 && it!="הלכות" && it!="תורה" }
+        if (title.isEmpty()) return 0f
+        var total=0f
+        for (term in analysis.terms) {
+            if (term.alternatives.any { alt -> title.any { word -> SearchLanguage.matches(alt,word)>.65f } })
+                total+=10f*term.weight
+        }
+        return minOf(23f,total)
+    }
+
     private fun termMatch(group: SearchLanguage.Term, tokens: List<String>): Float {
         var strongest=0f
         for (w in group.alternatives) {
@@ -115,6 +174,23 @@ internal class PreciseEvidenceSearch(
             }
         }
         return strongest
+    }
+
+    /** A quantitative answer must give an amount for the *asked-about noun*,
+     * not merely mention another number somewhere in the same law. */
+    private fun quantityEvidence(analysis: SearchLanguage.Analysis, words: List<String>): Float {
+        if (analysis.intent!=SearchLanguage.Intent.HOW_MANY) return 0f
+        val numbers=setOf("אחד","אחת","שני","שנימ","שתימ","שלוש","שלשה", "שלושת", "ארבע",
+            "חמש","שש","שבע","שמונה","תשע","עשר","עשרימ","שלשימ")
+        val positions=words.indices.filter { words[it] in numbers }
+        if (positions.isEmpty()) return 0f
+        // The noun following a quantity question determines what is counted.
+        val concept=analysis.terms.firstOrNull { it.word!="כמה" && it.word!="מספר" && it.word!="מנינ" }
+        for (idx in positions) {
+            val near=words.subList(maxOf(0,idx-3),minOf(words.size,idx+4))
+            if (concept!=null && concept.word.length>=4 && termMatch(concept,near)>=.84f) return 22f
+        }
+        return 3f
     }
 
     private data class Evidence(val score: Float, val matched: Int, val coverage: Float)
@@ -140,8 +216,12 @@ internal class PreciseEvidenceSearch(
             passage.contains(a.word+" "+b.word)
         }
         val shortness=(passage.length-180).coerceAtLeast(0)*.012f
-        val score=coverage*110f+matched*2.5f+minOf(7f,directPhrases*3f)+
-            SearchLanguage.intentBoost(analysis.intent,passage)*.85f+
+        // A question asking whether something is permitted needs an explicit
+        // normative ruling, not merely a narrative with overlapping vocabulary.
+        val asksPermission=analysis.normalized.contains("מותר") || analysis.normalized.contains("אסור")
+        val permissionEvidence=if (asksPermission && Regex("אסור|מותר|מתר").containsMatchIn(passage)) 20f else 0f
+        val score=coverage*110f+matched*2.5f+minOf(7f,directPhrases*3f)+permissionEvidence+
+            SearchLanguage.intentBoost(analysis.intent,passage)*.85f+quantityEvidence(analysis,words)+
             secCoverage*6f+max(0f,semanticScore)*12f-shortness
         return Evidence(score,matched,coverage)
     }
@@ -159,25 +239,32 @@ internal class PreciseEvidenceSearch(
         val passages=loadPassages(ids)
         if (passages.isEmpty()) return emptyList()
         val lawSections=HashMap<Int,String>()
+        val affinities=sectionAffinities(analysis)
+        val sectionBoostCache=HashMap<String,Float>()
         for (batch in passages.map { it.lawId }.distinct().chunked(250)) {
             val placeholders=batch.joinToString(",") { "?" }
             db.rawQuery("SELECT id,section FROM laws WHERE id IN ($placeholders)",
                 batch.map { it.toString() }.toTypedArray()).use { c ->
-                while (c.moveToNext()) lawSections[c.getInt(0)]=HebrewSearch.normalize(c.getString(1))
+                while (c.moveToNext()) lawSections[c.getInt(0)]=c.getString(1)
             }
         }
         val accepted=HashMap<Int,Pair<Passage,Evidence>>()
         val groupCount=analysis.terms.size
         for (passage in passages) {
+            val sec=lawSections[passage.lawId].orEmpty()
             val score=evidence(analysis,weights,passage.norm,
-                lawSections[passage.lawId].orEmpty(), semanticScores[passage.lawId]?:0f)
+                HebrewSearch.normalize(sec), semanticScores[passage.lawId]?:0f)
             val needed=if (groupCount==1) 1 else 2
             // Penalize partial subject matches. For hard multi-concept queries
             // a passage that lacks the specific condition is not reliable.
-            if (score.matched<needed || score.coverage<(if (groupCount<3) .48f else .53f)) continue
+            if (score.matched<needed || score.coverage<(if (groupCount<3) .40f else .38f)) continue
+            val sectionBonus=sectionBoostCache.getOrPut(sec) {
+                (affinities[sec]?:0f)*40f+sectionTitleBoost(sec,analysis)
+            }
+            val rankedEvidence=score.copy(score=score.score+sectionBonus)
             val old=accepted[passage.lawId]
-            if (old==null || score.score>old.second.score)
-                accepted[passage.lawId]=passage to score
+            if (old==null || rankedEvidence.score>old.second.score)
+                accepted[passage.lawId]=passage to rankedEvidence
         }
         val sorted=accepted.entries.asSequence().map { (id,pair) ->
             val (passage,e)=pair
