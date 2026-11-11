@@ -24,18 +24,20 @@ start_query() {
   adb shell am force-stop "$PKG"
   adb logcat -c
   adb shell "am start -n $PKG/.MainActivity --es debug_query '$1'"
-  # Assert the actual end-to-end search returns source records. The previous
-  # smoke test only checked that the process was alive, not that queries worked.
-  for attempt in $(seq 1 15); do
-    adb shell pidof "$PKG" > /dev/null || { adb logcat -d -t 600 > "$OUT/search-crash.txt"; return 1; }
+  # Cold starts can take several seconds: do NOT fail on an immediate pidof
+  # check before Android has created the app process. Instead wait for the
+  # actual semantic+FTS completion marker logged from CorpusStore.search().
+  for attempt in $(seq 1 30); do
     if adb logcat -d -s RambamSearch:I '*:S' | grep -q 'RESULT count=[1-9]'; then
       echo "SEARCH_RESULT_VERIFIED $1"
+      sleep 1  # allow Compose to display the finished results before capture
       return 0
     fi
     sleep 2
   done
-  adb logcat -d -t 600 > "$OUT/search-failure.txt"
-  echo "FAILED: smart search returned no records within 30 seconds: $1" >&2
+  adb logcat -d -t 1200 > "$OUT/search-failure.txt"
+  echo "FAILED: search returned no records after 60 seconds: $1" >&2
+  tail -n 140 "$OUT/search-failure.txt" >&2
   return 1
 }
 sleep 2

@@ -74,6 +74,7 @@ jobs:
           name: Mishneh-Torah-Build-Results
           path: |
             artifacts/delivery/
+            artifacts/screenshots/
             artifacts/corpus_report.json
             artifacts/SOURCE_MANIFEST.json
           if-no-files-found: warn
