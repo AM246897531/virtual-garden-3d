@@ -35,3 +35,28 @@ An independently written approximate Python diagnostic retrieval mirror scored b
 6. Only after the user separately authorizes compilation: build APK, install, test, capture actual screenshots, and prepare Drive delivery.
 
 **Never call this 100/100 search accuracy until all 100 independently evaluated app results and exact source-highlight spans pass in a recorded, reproducible runtime run.**
+## Continuation update — advanced retrieval research and fixes (11 Nov 2026, later)
+
+The user authorized exploring smaller local models and auxiliary open-licensed language tools, but **did not authorize Android compilation yet**. No APK was built from this branch.
+
+### External candidates researched
+- [alphaedge-ai/multilingual-e5-small-heb-32768](https://huggingface.co/alphaedge-ai/multilingual-e5-small-heb-32768): Hebrew-trimmed multilingual E5; MIT; 34.2 million parameters; model repository ~139 MB, weights ~137 MB. Candidate for future INT8 quantization if measured accuracy, memory and device latency justify it. Do not claim that trimming has been verified on rabbinic Hebrew.
+- [dicta-il/dictabert-tiny-joint](https://huggingface.co/dicta-il/dictabert-tiny-joint): CC BY 4.0; ~45 million parameters. This is a Hebrew morphological/lemma/segmentation model, **not** a trained sentence retrieval model. It may help query analysis, but download/execution/Android deployment have NOT been verified.
+- [dicta-il/neodictabert-bilingual-embed](https://huggingface.co/dicta-il/neodictabert-bilingual-embed): CC BY 4.0; approximately 400 million parameters. Useful experimental comparator, not preferred for a lightweight offline Android install.
+- Do not redistribute or incorporate any additional copyrighted commentary or corpus without verifying version-specific commercial rights.
+
+### Actual changes committed
+- Query morphology and evidence-window masks are now prepared once per search instead of once for every passage, and exact primary words bypass expensive fuzzy loops. **Speedup not yet benchmarked on device.**
+- Title-heading coverage now counts distinct synonym-supported topic concepts and avoids elevating unrelated topics on one incidental word.
+- Debug QA now separately reports *goldAnchors* and *verifiedAnchors*. Mere in-bounds turquoise span is not considered proof of answer accuracy. Only **20 of the currently committed 100 reference cases have a gold answer anchor**.
+- Added independent 100-question model experiment at `scripts/experiment_tiny_hebrew_e5_100.py`, with workflow `.github/workflows/mishneh-e5-tiny-retrieval.yml`. The experiment uses Python only; it neither builds an APK nor changes Android dependencies.
+- Experiment Actions run: https://github.com/AM246897531/virtual-garden-3d/actions/runs/43096714626 . At last inspection it remained queued. **Do not infer a result from a queued workflow.**
+- Previous source-only QA run 43095038196 completed its core source-integrity tests but its artifact-upload step failed / final run status appeared stale. Earlier Python-only reference run 43090673753 succeeded. These tests are not retrieval accuracy.
+- Pure lexical TF-IDF research on the official 100 reference questions, using an earlier 15,063-law corpus copy: best untuned lexical/heading fusion 24/100 Top-1, compared with a separate approximate Kotlin-search mirror of 64/100. Neither measures the updated actual Android runtime. Different local test-set variants must not be conflated.
+
+### Next empirical gate (unmet)
+1. Await the experimental model's actual recorded recall@1/5/20 results; model must demonstrably outperform existing retrieval and fit an Android resource budget before packaging.
+2. Evaluate selected model on **previously unseen phrasing** as well as the visible 100, to avoid benchmark memorization.
+3. Collect independently checked target passages for all 100 questions, rather than assuming any in-bounds highlight is correct.
+4. Instrument real Android Top-1, top-k, span accuracy and latency **only after user separately authorizes compilation**.
+5. No 100/100 claim, no Drive release until runtime and answer-span evidence exist.
