@@ -55,6 +55,16 @@ def run():
     x=vectorizer.fit_transform([normalized(r[4])[:950] for r in rows])
     q=vectorizer.transform([normalized(s) for s in questions])
     lex=(q@x.T).toarray().astype("float32")
+    # Store raw source-agnostic scores for independent, held-out fusion
+    # experiments. Never store or encode the expected source in a score.
+    # Scores are research artifacts ONLY and are not shipped into Android.
+    OUT.parent.mkdir(parents=True,exist_ok=True)
+    np.savez_compressed(
+        OUT.with_name("experimental_e5_scores_100.npz"),
+        semantic=sim.astype(np.float16),
+        lexical=lex.astype(np.float16),
+        doc_ids=np.asarray([r[0] for r in rows],dtype=np.int32),
+    )
     # No tuning on gold outcomes: predeclare three fixed weights.
     mixes={"semantic_only":(1.0,0.0),"semantic_lexical":(.75,.25),
            "balanced":(.50,.50)}
