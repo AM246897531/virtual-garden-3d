@@ -58,7 +58,9 @@ adb shell am force-stop "$PKG"
 adb logcat -c
 adb shell am start -n "$PKG/.MainActivity" --ez debug_quality_50 true
 success=0
-for attempt in $(seq 1 180); do
+# 110 full-device searches can require >6 minutes on CPU-only emulators.
+# Allow up to 40 minutes for the independent accuracy run; the 110/110 gate stays strict.
+for attempt in $(seq 1 480); do
   summary="$(adb logcat -d -s RambamQuality:I '*:S' | grep 'Q110_COMPLETE ' | tail -n 1 || true)"
   if [[ -n "$summary" ]]; then
     echo "ANDROID_INDEPENDENT_QUALITY_REPORT $summary"
@@ -76,7 +78,7 @@ for attempt in $(seq 1 180); do
   if adb logcat -d -s RambamQuality:E '*:S' | grep -q 'Q110_FAILED_TO_RUN'; then
     break
   fi
-  sleep 2
+  sleep 5
 done
 adb logcat -d -s RambamQuality:I '*:S' > "$OUT/quality-110-log.txt" || true
 if [[ "$success" != "1" ]]; then
