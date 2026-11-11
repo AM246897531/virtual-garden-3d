@@ -47,13 +47,22 @@ internal class PreciseEvidenceSearch(
     private fun ftsIds(expression: String, maxRows: Int, sink: MutableSet<Int>) {
         if (expression.isBlank()) return
         try {
-            // FTS4 rowids follow the canonical book ordering. A plain LIMIT
-            // silently starves later books even when a word matches everywhere.
-            // Sample both ends before applying unbiased evidence re-ranking.
-            for ((descending, rows) in listOf(false to maxRows, true to maxOf(150, maxRows / 2))) {
-                val order = if (descending) "DESC" else "ASC"
-                db.rawQuery("SELECT rowid FROM passage_fts WHERE passage_fts MATCH ? " +
-                    "ORDER BY rowid $order LIMIT $rows", arrayOf(expression)).use { c ->
+            // FTS row IDs follow canonical book order. Ascending/descending LIMITs
+            // systematically omit the middle of the Mishneh Torah corpus. Obtain
+            // a bounded number of matches from every longitudinal index slice.
+            // Candidate order is NOT used as relevance, and no source destinations
+            // or benchmark questions are present in this algorithm.
+            val bins = 8
+            val allRows = size.toInt().coerceAtLeast(bins)
+            val perBin = (maxRows + bins - 1) / bins
+            for (segment in 0 until bins) {
+                val first = (segment * allRows / bins) + 1
+                val last = ((segment + 1) * allRows / bins)
+                db.rawQuery(
+                    "SELECT rowid FROM passage_fts WHERE passage_fts MATCH ? " +
+                        "AND rowid >= ? AND rowid <= ? LIMIT $perBin",
+                    arrayOf(expression, first.toString(), last.toString())
+                ).use { c ->
                     while (c.moveToNext()) sink.add(c.getInt(0))
                 }
             }
