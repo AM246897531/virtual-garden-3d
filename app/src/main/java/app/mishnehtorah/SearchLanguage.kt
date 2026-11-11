@@ -388,7 +388,7 @@ internal object SearchLanguage {
     fun evidenceSegments(question: String): List<String> {
         if (question.length<75) return emptyList()
         val chunks=Regex("[.!?;׃\\n]+").split(question)
-            .map { it.trim() }.filter { it.length>=16 && it.length<=950 }
+            .map { it.trim() }.filter { it.length>=9 && it.length<=950 }
         if (chunks.size<2) return emptyList()
         val scored=chunks.mapIndexed { i, chunk ->
             val n=HebrewSearch.normalize(chunk)
@@ -411,6 +411,22 @@ internal object SearchLanguage {
         return scored.sortedWith(compareByDescending<Triple<Int,String,Int>> { it.third }
             .thenBy { it.first }).take(3).filter { it.third>0 }
             .map { it.second }.distinct().filter { it!=question.trim() }
+    }
+
+    /**
+     * Rank on the actual question and its relevant conditions, not on
+     * surrounding discourse such as "I want a source from the Rambam".
+     * The unmodified input is still used by independent recall routes.
+     *
+     * If a long sentence has no reliable boundaries, preserve all words
+     * instead of guessing and silently deleting a material condition.
+     */
+    fun focusedEvidenceQuery(question: String): String {
+        val segments=evidenceSegments(question)
+        if (segments.isEmpty()) return question
+        val ordered=segments.sortedBy { part -> question.indexOf(part) }
+        val focused=ordered.joinToString(" ").trim()
+        return if (focused.isBlank()) question else focused
     }
 
     private val affixes = charArrayOf('ב','כ','ל','מ','ו','ה','ש')
