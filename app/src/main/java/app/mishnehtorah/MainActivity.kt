@@ -154,7 +154,10 @@ fun RambamApp(initialQuery: String = "", debugTypeahead: Boolean = false,
                             val required = item.optString("highlight_contains", "")
                             val boundsValid = passage != null && top != null &&
                                 passage.start >= 0 && passage.end <= top.text.length &&
-                                passage.end > passage.start
+                                passage.end > passage.start &&
+                                // Painting the whole long halakhah is never a
+                                // successful precise answer highlight.
+                                passage.end-passage.start <= 360
                             val hasGoldAnchor = required.isNotBlank()
                             if (hasGoldAnchor) goldAnchors++
                             val anchorValid = boundsValid && hasGoldAnchor &&
@@ -172,7 +175,9 @@ fun RambamApp(initialQuery: String = "", debugTypeahead: Boolean = false,
                                 "${if (accurate) "PASS" else "FAIL"} tier=${item.getInt("tier")} " +
                                 "top=${top?.reference ?: "none"} " +
                                 "expected=$section/$expectedChapter/$expectedLaw " +
-                                "passage=$passageValid anchor=$anchorValid elapsed_ms=${timings.last()} " +
+                                "passage=$passageValid anchor=$anchorValid " +
+                                "spanLength=${if (passage!=null) passage.end-passage.start else -1} " +
+                                "elapsed_ms=${timings.last()} " +
                                 "excerpt=$excerpt")
                         }
                         val sorted = timings.sorted()
