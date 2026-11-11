@@ -52,6 +52,43 @@ start_query() {
   tail -n 140 "$OUT/search-failure.txt" >&2
   return 1
 }
+# Independent 110-question source-quality gate BEFORE screenshot/smoke tests:
+# independent corpus references and per-query latency from the real device.
+adb shell am force-stop "$PKG"
+adb logcat -c
+adb shell am start -n "$PKG/.MainActivity" --ez debug_quality_50 true
+success=0
+for attempt in $(seq 1 180); do
+  summary="$(adb logcat -d -s RambamQuality:I '*:S' | grep 'Q110_COMPLETE ' | tail -n 1 || true)"
+  if [[ -n "$summary" ]]; then
+    echo "ANDROID_INDEPENDENT_QUALITY_REPORT $summary"
+    # Accuracy AND source-excerpt fidelity are independent gates.
+    passed="$(echo "$summary" | sed -nE 's/.*passed=([0-9]+).*/\1/p')"
+    marked="$(echo "$summary" | sed -nE 's/.*highlighted=([0-9]+).*/\1/p')"
+    if [[ -z "$passed" || -z "$marked" || "$passed" -lt 100 || "$marked" -lt 100 ]]; then
+      echo "QUALITY_GATE_NOT_MET: sources=$passed/110 highlights=$marked/110, minimum=100" >&2
+      adb logcat -d -t 12000 > "$OUT/quality-gate-failure-logcat.txt"
+      exit 1
+    fi
+    success=1
+    break
+  fi
+  if adb logcat -d -s RambamQuality:E '*:S' | grep -q 'Q110_FAILED_TO_RUN'; then
+    break
+  fi
+  sleep 2
+done
+adb logcat -d -s RambamQuality:I '*:S' > "$OUT/quality-110-log.txt" || true
+if [[ "$success" != "1" ]]; then
+  echo 'FAILED: independent source-quality benchmark did not complete' >&2
+  tail -n 100 "$OUT/quality-110-log.txt" >&2
+  adb logcat -d -t 1900 > "$OUT/quality-50-failure-logcat.txt"
+  exit 1
+fi
+echo 'INDEPENDENT_QUALITY_BENCHMARK_COMPLETED 110 QUESTIONS'
+adb shell am force-stop "$PKG"
+adb shell am start -n "$PKG/.MainActivity"
+sleep 7
 sleep 2
 screenshot 01-home
 S=$(adb shell wm size | tr -d '\r' | grep -oE '[0-9]+x[0-9]+' | tail -1)
@@ -102,40 +139,6 @@ if adb logcat -d -s RambamSearch:E '*:S' | grep -q 'Search query failed'; then
   exit 1
 fi
 screenshot 21-typeahead-hebrew-question
-# Full 50-query QA on the RUNNING Android engine (single model load):
-# independent corpus references and per-query latency from the real device.
-adb shell am force-stop "$PKG"
-adb logcat -c
-adb shell am start -n "$PKG/.MainActivity" --ez debug_quality_50 true
-success=0
-for attempt in $(seq 1 180); do
-  summary="$(adb logcat -d -s RambamQuality:I '*:S' | grep 'Q110_COMPLETE ' | tail -n 1 || true)"
-  if [[ -n "$summary" ]]; then
-    echo "ANDROID_INDEPENDENT_QUALITY_REPORT $summary"
-    # Accuracy AND source-excerpt fidelity are independent gates.
-    passed="$(echo "$summary" | sed -nE 's/.*passed=([0-9]+).*/\1/p')"
-    marked="$(echo "$summary" | sed -nE 's/.*highlighted=([0-9]+).*/\1/p')"
-    if [[ -z "$passed" || -z "$marked" || "$passed" -lt 100 || "$marked" -lt 100 ]]; then
-      echo "QUALITY_GATE_NOT_MET: sources=$passed/110 highlights=$marked/110, minimum=100" >&2
-      adb logcat -d -t 12000 > "$OUT/quality-gate-failure-logcat.txt"
-      exit 1
-    fi
-    success=1
-    break
-  fi
-  if adb logcat -d -s RambamQuality:E '*:S' | grep -q 'Q110_FAILED_TO_RUN'; then
-    break
-  fi
-  sleep 2
-done
-adb logcat -d -s RambamQuality:I '*:S' > "$OUT/quality-110-log.txt" || true
-if [[ "$success" != "1" ]]; then
-  echo 'FAILED: independent source-quality benchmark did not complete' >&2
-  tail -n 100 "$OUT/quality-110-log.txt" >&2
-  adb logcat -d -t 1900 > "$OUT/quality-50-failure-logcat.txt"
-  exit 1
-fi
-echo 'INDEPENDENT_QUALITY_BENCHMARK_COMPLETED 110 QUESTIONS'
 adb shell am force-stop "$PKG"
 adb shell am start -n "$PKG/.MainActivity"
 sleep 7
