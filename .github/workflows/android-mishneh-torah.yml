@@ -35,6 +35,18 @@ jobs:
           gradle-version: '8.10.2'
       - name: Build signed installable debug APK
         run: gradle --no-daemon :app:assembleDebug
+      - name: Enable hardware acceleration for Android emulator
+        run: sudo chmod 666 /dev/kvm || true
+      - name: Real Android emulator smoke test and screenshots
+        uses: reactivecircus/android-emulator-runner@v2
+        continue-on-error: true
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          script: bash scripts/capture.sh
       - name: Collect hashes and bundle metadata
         if: success()
         run: |
@@ -45,7 +57,9 @@ jobs:
           cp app/src/main/assets/rambam.sqlite artifacts/delivery/
           git archive --format=zip -o artifacts/delivery/MishnehTorah-Android-Source.zip HEAD
           cp ATTRIBUTION_AND_LICENSES.md artifacts/delivery/
-          printf "Build: GitHub Actions; Gradle 8.10.2; JDK 17; Android 35.\nAPK: signed Android debug APK.\nEmulator/device test: not yet performed by this workflow.\nSemantic AI model: NOT included.\nSee corpus_report.json for actual completeness.\n" > artifacts/delivery/BUILD_AND_TEST_REPORT.md
+          if [ -d artifacts/screenshots ]; then (cd artifacts && zip -q -r delivery/Screenshots-Real-Android.zip screenshots); fi
+          printf "Build: GitHub Actions; Gradle 8.10.2; JDK 17; Android 35.\nAPK: signed Android debug APK.\nSemantic AI model: NOT included.\nSee corpus_report.json for actual completeness.\n" > artifacts/delivery/BUILD_AND_TEST_REPORT.md
+          if [ -f artifacts/screenshots/01-home.png ]; then echo "Emulator screenshot capture executed; examine PNGs and logcat for runtime verification." >> artifacts/delivery/BUILD_AND_TEST_REPORT.md; else echo "No emulator screenshots captured: runtime remains unverified." >> artifacts/delivery/BUILD_AND_TEST_REPORT.md; fi
           (cd artifacts && zip -q -r delivery/Rambam-Licensed-Raw-Corpus.zip raw-corpus)
           (cd artifacts/delivery && sha256sum * > SHA256SUMS.txt)
       - uses: actions/upload-artifact@v4

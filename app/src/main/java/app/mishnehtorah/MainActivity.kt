@@ -38,18 +38,19 @@ private val DarkPaper = Color(0xFF111720)
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { RambamApp() }
+        val initialQuery = intent.getStringExtra("debug_query").orEmpty()
+        setContent { RambamApp(initialQuery) }
     }
 }
 
 @Composable
-fun RambamApp() {
+fun RambamApp(initialQuery: String = "") {
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("reading_preferences", 0) }
     var dark by rememberSaveable { mutableStateOf(prefs.getBoolean("dark", false)) }
     var fontSize by rememberSaveable { mutableFloatStateOf(prefs.getFloat("font", 21f)) }
     var currentTab by rememberSaveable { mutableStateOf("search") }
-    var query by rememberSaveable { mutableStateOf("") }
+    var query by rememberSaveable { mutableStateOf(initialQuery) }
     var book by rememberSaveable { mutableStateOf<String?>(null) }
     var section by rememberSaveable { mutableStateOf<String?>(null) }
     var chapter by rememberSaveable { mutableStateOf<Int?>(null) }
