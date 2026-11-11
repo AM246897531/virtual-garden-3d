@@ -10,6 +10,8 @@ internal object SearchLanguage {
     internal enum class Intent { GENERAL, WHEN, WHERE, HOW_MANY, REQUIREMENT, CONDITION }
 
     private val stop = setOf(
+        "לברר", "מדבר", "נוגע", "מתיחס", "מתייחס", "כתוב", "המקור",
+        "מקור", "מלמד", "מבקש", "מנסה",
         "מה", "מי", "של", "את", "על", "עם", "אני", "אנחנו", "אתה", "שהוא", "שהיא", "האם",
         "אם", "אפשר", "אפשרי", "צריך", "צריכ", "היכנ", "איזה", "איזו", "אלו", "היכן",
         "שאלה", "שואל", "לפי", "רמבמ", "הלכה", "בהלכה", "לפי", "מותר", "אסור", "דינ",
@@ -27,6 +29,9 @@ internal object SearchLanguage {
     private val synonyms: Map<String, List<String>> = mapOf(
         // Everyday Hebrew often describes an event, while Rambam names its
         // legal concept. These are language bridges, never source-ID mappings.
+        "תלויה" to listOf("תלוי", "בידו", "רשות", "נתונה"),
+        "באדמ" to listOf("אדמ", "האדמ", "לאדמ"),
+        "רע" to listOf("הרע", "רעה", "רשע", "רשעימ"),
         "בחירה" to listOf("רשות", "ברשות", "רצונו", "רצה", "בחירתו"),
         "לבחור" to listOf("רשות", "רצה", "בחירה", "רצונו"),
         "להחליט" to listOf("רשות", "רצה", "בחירה", "רצונו"),
@@ -245,11 +250,20 @@ internal object SearchLanguage {
         val deadlineOverrun = timeMentioned &&
             Regex("נגמר|הסתימ|חלפ|עבר|איחר|פספס|החמצ|לא הספק|מאוחר מדי").containsMatchIn(normalized)
         val nonJewish=normalized.contains("אינו יהודי") || normalized.contains("לא יהודי")
+        val discourseLead=normalized.startsWith("אני רוצה לברר") ||
+            normalized.startsWith("אני רוצה לדעת") ||
+            normalized.startsWith("אני רוצה להבין") ||
+            normalized.startsWith("אני רוצה למצוא")
+        // Protect short Hebrew terms with real legal meaning, without
+        // accepting arbitrary two-character FTS noise.
+        val meaningfulShort=setOf("רע","דם","גט","אש","לב","יד","שמ")
         val result=ArrayList<Term>()
         val seen=HashSet<String>()
         for (word in all) {
             if (nonJewish && (word=="יהודי" || word=="אינו")) continue
-            if (word.length<3 || word in stop) continue
+            if ((word.length<3 && word !in meaningfulShort) ||
+                word in stop || word.startsWith("הרמב") || word.startsWith("רמב") ||
+                (discourseLead && word=="רוצה")) continue
             var lexicalKey=word
             if (!synonyms.containsKey(lexicalKey)) {
                 var without=word
@@ -262,7 +276,10 @@ internal object SearchLanguage {
             }
             // The literal user word must be the FIRST retrieval option;
             // wide synonym lists used to truncate it out of FTS candidate search.
-            val alternatives=(listOf(word,lexicalKey)+synonyms[lexicalKey].orEmpty())
+            val unprefixed=if (word.length>=4 &&
+                word.first() in charArrayOf('ב','ה','ו','ל','מ','ש','כ'))
+                word.drop(1) else ""
+            val alternatives=(listOf(word,lexicalKey,unprefixed)+synonyms[lexicalKey].orEmpty())
                 .map { HebrewSearch.normalize(it) }.filter { it.length>=3 && !it.contains(' ') }
                 .distinct().take(10)
             val stem=stem(word)
