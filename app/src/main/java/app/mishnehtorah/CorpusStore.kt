@@ -48,7 +48,9 @@ object HebrewSearch {
     }
 }
 
-class CorpusStore private constructor(private val db: SQLiteDatabase) {
+class CorpusStore private constructor(
+    private val db: SQLiteDatabase, private val semantic: SemanticIndex
+) {
     companion object {
         suspend fun open(context: Context): CorpusStore = withContext(Dispatchers.IO) {
             val destination = File(context.filesDir, "rambam.sqlite")
@@ -59,7 +61,10 @@ class CorpusStore private constructor(private val db: SQLiteDatabase) {
                 }
                 check(temporary.renameTo(destination)) { "Unable to move corpus database" }
             }
-            CorpusStore(SQLiteDatabase.openDatabase(destination.absolutePath, null, SQLiteDatabase.OPEN_READONLY))
+            // The semantic index is mandatory for this build: never silently
+            // call a lexical-only APK the complete smart-search release.
+            val model = SemanticIndex.load(context)
+            CorpusStore(SQLiteDatabase.openDatabase(destination.absolutePath, null, SQLiteDatabase.OPEN_READONLY), model)
         }
     }
     private fun laws(sql: String, args: Array<String> = emptyArray()): List<Law> {
@@ -140,6 +145,16 @@ class CorpusStore private constructor(private val db: SQLiteDatabase) {
                 // Keep a functioning lexical fallback if FTS is absent.
             }
         }
+        val semanticResults = semantic.nearest(input, 140)
+        val semanticScores = semanticResults.toMap()
+        val missingModelIds = semanticResults.map { it.first }.filter { it !in collected }.take(140)
+        if (missingModelIds.isNotEmpty()) {
+            val placeholders = missingModelIds.joinToString(",") { "?" }
+            laws(lawColumns + "WHERE id IN (" + placeholders + ")",
+                missingModelIds.map { it.toString() }.toTypedArray()).forEach {
+                collected.putIfAbsent(it.id, it)
+            }
+        }
         if (collected.isEmpty()) {
             laws(lawColumns + "WHERE norm LIKE ? LIMIT 250",
                 arrayOf("%" + words.first() + "%")).forEach {
@@ -164,6 +179,9 @@ class CorpusStore private constructor(private val db: SQLiteDatabase) {
             if ("יעלה" in base && "יעלה ויבא" in text) rank += 50
             if ("שכח" in base && "שכח" in text) rank += 16
             if ("ראש" in base && "ראשי חדש" in text) rank += 12
+            // Blend exact source retrieval with the learned Hebrew semantic
+            // score. Exact matches remain important for legal reference.
+            rank += ((semanticScores[law.id] ?: 0f) * 62f).toInt()
             return rank
         }
         return collected.values

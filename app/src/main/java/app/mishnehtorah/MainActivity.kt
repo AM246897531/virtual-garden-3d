@@ -211,7 +211,7 @@ private fun SearchPage(
 ) {
     Column(Modifier.fillMaxSize().padding(horizontal = 22.dp)) {
         Spacer(Modifier.height(34.dp))
-        PageHeading("משנה תורה", "הרמב״ם — חיפוש חכם במקורות")
+        PageHeading("משנה תורה", "הרמב״ם — חיפוש סמנטי עברי, ללא אינטרנט")
         Spacer(Modifier.height(32.dp))
         OutlinedTextField(
             value = query, onValueChange = onQueryChange,
@@ -242,7 +242,7 @@ private fun SearchPage(
                     Text("לימוד מתוך המקור", fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.primary)
                     Spacer(Modifier.height(7.dp))
-                    Text("אפשר לחפש מילים, הלכות ונושאים בשפה טבעית. התוצאות מציגות את לשון הרמב״ם והמקור המדויק — לא פסק הלכה שנוצר בידי בינה מלאכותית.",
+                    Text("מנוע הטמעות עברי מקומי משלב התאמת משמעות עם חיפוש מדויק. אפשר לחפש מילים, הלכות ונושאים בשפה טבעית. התוצאות מציגות את לשון הרמב״ם והמקור המדויק — לא פסק הלכה שנוצר בידי בינה מלאכותית.",
                         lineHeight = 25.sp)
                 }
             }

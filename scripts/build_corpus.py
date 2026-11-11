@@ -29,6 +29,12 @@ BOOKS = {
     "nezikim": "ספר נזיקין", "kinyan": "ספר קניין", "mishpatim": "ספר משפטים",
     "shoftim": "ספר שופטים",
 }
+# Printed editions intentionally skip the label "הלכה ח" at this location.
+# Two independent editions and Mechon-Mamre/Wikisource show no law text
+# for this number. Record it as a numbering anomaly, NOT an omitted law.
+# https://he.wikisource.org/wiki/רמב"ם_הלכות_תלמוד_תורה_ז
+DOCUMENTED_NUMBERING_SKIPS = {("Mishneh Torah, Torah Study", 7, 8)}
+
 MARKS = re.compile(r"[\u0591-\u05c7]")
 HTML_TAGS = re.compile(r"<[^>]+>")
 SYMBOLS = re.compile(r"[^\w\u0590-\u05ff]+", re.UNICODE)
@@ -89,6 +95,7 @@ def main():
     records = []
     seen = set()
     gaps = []
+    numbering_skips = []
     for title in sorted(by_title):
         sources = []
         for ver in PREFERRED:
@@ -141,6 +148,15 @@ def main():
                             print("SEGMENT_FALLBACK", title, cidx+1, law_index, alternative["version"], flush=True)
                             break
                 if not isinstance(law, str) or not cleaned_text(law):
+                    if (title, cidx+1, law_index) in DOCUMENTED_NUMBERING_SKIPS:
+                        numbering_skips.append({"title": title, "chapter": cidx+1,
+                            "halakhah": law_index,
+                            "reason": "Number omitted in established print editions; no lost text",
+                            "evidence": [
+                              "https://he.wikisource.org/wiki/רמב%22ם_הלכות_תלמוד_תורה_ז",
+                              "https://mechon-mamre.org/i/1307.htm"]})
+                        print("DOCUMENTED_NUMBERING_SKIP",title,cidx+1,law_index,flush=True)
+                        continue
                     gaps.append({"title": title, "chapter": cidx+1, "halakhah": law_index,
                                  "issue": "missing in every verified version"})
                     print("MISSING_LAW", title, cidx+1, law_index, flush=True)
@@ -159,6 +175,11 @@ def main():
         print("SECTION_OK", title, maximum, "chapters", flush=True)
     if len(by_book) != 14 or len(records) < 10000:
         raise RuntimeError("Incomplete corpus: " + json.dumps(by_book, ensure_ascii=False))
+    if gaps:
+        raise RuntimeError("Real missing Rambam text must be fixed before packaging: " +
+                           json.dumps(gaps,ensure_ascii=False))
+    if len(numbering_skips) != 1:
+        raise RuntimeError("Expected the single independently documented numbering skip")
     target = ASSETS / "rambam.sqlite"
     if target.exists(): target.unlink()
     db = sqlite3.connect(target)
@@ -184,6 +205,8 @@ def main():
     finally: db.close()
     report = {"completeness": "partial" if gaps else "complete",
         "gaps": gaps, "missing_count": len(gaps),
+        "numbering_anomalies": numbering_skips,
+        "numbering_anomalies_count": len(numbering_skips),
         "total_books": len(by_book), "total_sections": len(by_title),
         "halakhot": len(records), "books": dict(by_book), "chapters_by_edition": dict(chapters_used),
         "sqlite_sha256": hashlib.sha256(target.read_bytes()).hexdigest(),
