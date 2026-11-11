@@ -164,12 +164,12 @@ fun RambamApp(initialQuery: String = "", debugTypeahead: Boolean = false,
                             val goldEnd=item.optInt("highlight_end_utf16",-1)
                             val goldAvailable=goldStart>=0 && goldEnd>goldStart
                             val overlap=if (boundsValid && goldAvailable)
-                                (minOf(passage!!.end,goldEnd)-maxOf(passage.start,goldStart))
+                                (minOf(passage!!.end,goldEnd)-maxOf(passage!!.start,goldStart))
                                     .coerceAtLeast(0) else 0
                             val goldCoverage=if (goldAvailable)
                                 overlap.toFloat()/(goldEnd-goldStart) else 0f
                             val highlightPrecision=if (boundsValid)
-                                overlap.toFloat()/(passage!!.end-passage.start) else 0f
+                                overlap.toFloat()/(passage!!.end-passage!!.start) else 0f
                             // Reject painting a broad paragraph that merely contains
                             // a small expected phrase. Original UTF-16 source offsets
                             // are independently computed from corpus text at build time.
