@@ -170,7 +170,8 @@ class CorpusStore private constructor(
         }
         // When a law was opened outside search, run content-only matching with
         // the original passage finder; never use a predetermined source hint.
-        val passage = RelevantPassage.find(law.text, question, "", semantic)
+        val evidenceQuestion=SearchLanguage.focusedEvidenceQuery(question)
+        val passage = RelevantPassage.find(law.text, evidenceQuestion, "", semantic)
             ?: SearchLanguage.sourceVocabularyBridges(question).firstNotNullOfOrNull { bridge ->
                 RelevantPassage.find(law.text, bridge, "", semantic)
             }
@@ -182,6 +183,7 @@ class CorpusStore private constructor(
     fun search(input: String, limit: Int = 22): List<Law> {
         if (input.isBlank()) return emptyList()
         val hits = preciseSearch.search(input, limit)
+        val evidenceQuestion=SearchLanguage.focusedEvidenceQuery(input)
         if (hits.isEmpty()) {
             Log.i("RambamSearch", "RESULT count=0 model_candidates=240 top=none")
             return emptyList()
@@ -190,7 +192,7 @@ class CorpusStore private constructor(
         val output = ArrayList<Law>(hits.size)
         for (hit in hits) {
             val law = lawById[hit.lawId]?.law ?: continue
-            val focus = preciseSearch.refine(law.text,input,hit.start,hit.end,hit.confidence)
+            val focus = preciseSearch.refine(law.text,evidenceQuestion,hit.start,hit.end,hit.confidence)
             synchronized(highlightCache) { highlightCache["${law.id}:$input"] = focus }
             output.add(law)
         }
