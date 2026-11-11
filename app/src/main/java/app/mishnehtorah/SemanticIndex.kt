@@ -4,6 +4,7 @@ import android.content.Context
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.math.sqrt
+import java.util.PriorityQueue
 
 /**
  * Compact learned Hebrew semantic embedding index. Trained solely on the licensed
@@ -133,18 +134,41 @@ class SemanticIndex private constructor(
         return if (used == 0) null else normalize(result)
     }
 
+    /** Batch clause-level similarity; query embedding is computed only once. */
+    fun similarities(question: String, passages: List<String>): FloatArray {
+        val q = queryVector(question) ?: return FloatArray(passages.size)
+        return FloatArray(passages.size) { index ->
+            val p = queryVector(passages[index])
+            if (p == null) 0f else {
+                var dot = 0f
+                for (j in 0 until dimensions) dot += q[j] * p[j]
+                dot
+            }
+        }
+    }
+
     /** Id-to-similarity scores, retaining at most [limit] top model matches. */
     fun nearest(input: String, limit: Int = 140): List<Pair<Int, Float>> {
         val q = queryVector(input) ?: return emptyList()
-        val scored = ArrayList<Pair<Int, Float>>(ids.size)
+        val top = PriorityQueue<Pair<Int, Float>>(limit + 1,
+            compareBy<Pair<Int, Float>> { it.second }.thenByDescending { it.first })
+        // O(documents * dimensions + documents * log(K)) without sorting or
+        // allocating 15,063 pairs on every search.
         for (index in ids.indices) {
             val offset = index * dimensions
             var dot = 0f
             for (j in 0 until dimensions) {
                 dot += documentVectors[offset + j].toInt() * q[j]
             }
-            scored.add(ids[index] to (dot / 127f))
+            val similarity = dot / 127f
+            if (top.size < limit) {
+                top.offer(ids[index] to similarity)
+            } else if (similarity > top.peek().second) {
+                top.poll()
+                top.offer(ids[index] to similarity)
+            }
         }
-        return scored.sortedByDescending { it.second }.take(limit)
+        return top.sortedWith(compareByDescending<Pair<Int, Float>> { it.second }
+            .thenBy { it.first })
     }
 }

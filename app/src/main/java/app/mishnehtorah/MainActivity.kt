@@ -1,6 +1,8 @@
 package app.mishnehtorah
 
 import android.os.Bundle
+import android.util.Log
+import org.json.JSONArray
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.*
@@ -21,6 +23,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -44,12 +51,13 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val initialQuery = intent.getStringExtra("debug_query").orEmpty()
         val debugTypeahead = intent.getBooleanExtra("debug_typeahead", false)
-        setContent { RambamApp(initialQuery, debugTypeahead) }
+        val debugQuality = intent.getBooleanExtra("debug_quality_50", false)
+        setContent { RambamApp(initialQuery, debugTypeahead, debugQuality) }
     }
 }
 
 @Composable
-fun RambamApp(initialQuery: String = "", debugTypeahead: Boolean = false) {
+fun RambamApp(initialQuery: String = "", debugTypeahead: Boolean = false, debugQuality: Boolean = false) {
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("reading_preferences", 0) }
     var dark by rememberSaveable { mutableStateOf(prefs.getBoolean("dark", false)) }
@@ -63,6 +71,7 @@ fun RambamApp(initialQuery: String = "", debugTypeahead: Boolean = false) {
     var section by rememberSaveable { mutableStateOf<String?>(null) }
     var chapter by rememberSaveable { mutableStateOf<Int?>(null) }
     var openLaw by remember { mutableStateOf<Law?>(null) }
+    var sourceQuestion by remember { mutableStateOf("") }
     var store by remember { mutableStateOf<CorpusStore?>(null) }
     var loadingError by remember { mutableStateOf<String?>(null) }
     val bookmarks = remember { mutableStateListOf<Int>() }
@@ -83,7 +92,7 @@ fun RambamApp(initialQuery: String = "", debugTypeahead: Boolean = false) {
     // Delayed autosubmit preserves the previous instant-search experience,
     // while IME Search and the visible button submit immediately.
     LaunchedEffect(query) {
-        delay(650)
+        delay(380)
         submittedQuery = query.trim()
     }
     LaunchedEffect(debugTypeahead) {
@@ -96,6 +105,56 @@ fun RambamApp(initialQuery: String = "", debugTypeahead: Boolean = false) {
                 delay(28)
             }
             android.util.Log.i("RambamSearch", "TYPEAHEAD_INPUT_COMPLETE")
+        }
+    }
+    // Real Android end-to-end regression suite, not a mocked Python search.
+    // On the emulator this runs exactly the same CorpusStore.search and
+    // RelevantPassage methods used by the user-facing Compose screens.
+    LaunchedEffect(store, debugQuality) {
+        val engine = store
+        if (debugQuality && engine != null) {
+            withContext(Dispatchers.IO) {
+                try {
+                    val raw = context.assets.open("quality_50.json").bufferedReader().use { it.readText() }
+                    val cases = JSONArray(raw)
+                    val timings = ArrayList<Long>()
+                    var passed = 0
+                    var highlighted = 0
+                    for (index in 0 until cases.length()) {
+                        val item = cases.getJSONObject(index)
+                        val question = item.getString("question")
+                        val section = "הלכות " + item.getString("section")
+                        val expectedChapter = item.getInt("chapter")
+                        val expectedLaw = item.getInt("law")
+                        val begin = android.os.SystemClock.elapsedRealtime()
+                        val answers = engine.search(question)
+                        timings.add(android.os.SystemClock.elapsedRealtime() - begin)
+                        val top = answers.firstOrNull()
+                        val accurate = top != null && top.section.endsWith(section) &&
+                            top.chapter == expectedChapter && top.number == expectedLaw
+                        if (accurate) passed++
+                        val passage = if (top != null) engine.relevantPassage(top, question) else null
+                        if (passage != null && passage.end > passage.start) highlighted++
+                        val excerpt = if (passage != null && top != null)
+                            top.text.substring(passage.start, passage.end)
+                                .replace('\n', ' ').take(130) else "none"
+                        Log.i("RambamQuality", "Q50_CASE ${index + 1}/${cases.length()} " +
+                            "${if (accurate) "PASS" else "FAIL"} tier=${item.getInt("tier")} " +
+                            "top=${top?.reference ?: "none"} " +
+                            "expected=$section/$expectedChapter/$expectedLaw " +
+                            "passage=${passage != null} elapsed_ms=${timings.last()} " +
+                            "excerpt=$excerpt")
+                    }
+                    val sorted = timings.sorted()
+                    val median = sorted[sorted.size / 2]
+                    val p95 = sorted[((sorted.size * .95).toInt()).coerceAtMost(sorted.lastIndex)]
+                    Log.i("RambamQuality", "Q50_COMPLETE passed=$passed total=${cases.length()} " +
+                        "highlighted=$highlighted median_ms=$median p95_ms=$p95 " +
+                        "max_ms=${sorted.last()}")
+                } catch (error: Throwable) {
+                    Log.e("RambamQuality", "Q50_FAILED_TO_RUN", error)
+                }
+            }
         }
     }
     LaunchedEffect(store, submittedQuery, searchRefresh) {
@@ -136,7 +195,10 @@ fun RambamApp(initialQuery: String = "", debugTypeahead: Boolean = false) {
     fun saveBookmarks() {
         prefs.edit().putStringSet("bookmarks", bookmarks.map { it.toString() }.toSet()).apply()
     }
-    fun showLaw(law: Law) { openLaw = law }
+    fun showLaw(law: Law, fromSearch: Boolean = false) {
+        openLaw = law
+        sourceQuestion = if (fromSearch) submittedQuery else ""
+    }
     val scheme = if (dark) darkColorScheme(
         primary = Color(0xFF96B7FF), background = DarkPaper,
         surface = Color(0xFF1C2634), onBackground = Color.White)
@@ -208,8 +270,9 @@ fun RambamApp(initialQuery: String = "", debugTypeahead: Boolean = false) {
                                 store = store!!,
                                 bookmarked = bookmarks.contains(openLaw!!.id),
                                 fontSize = fontSize,
+                                question = sourceQuestion,
                                 onBack = { openLaw = null },
-                                onNavigate = { showLaw(it) },
+                                onNavigate = { showLaw(it, fromSearch = sourceQuestion.isNotBlank()) },
                                 onBookmark = {
                                     val id = openLaw!!.id
                                     if (bookmarks.contains(id)) bookmarks.remove(id) else bookmarks.add(id)
@@ -220,8 +283,9 @@ fun RambamApp(initialQuery: String = "", debugTypeahead: Boolean = false) {
                                     prefs.edit().putFloat("font", fontSize).apply()
                                 })
                         currentTab == "search" ->
-                            SearchPage(query, { query = it }, results, searching, searchError,
-                                { submitSearch() }, { showLaw(it) })
+                            SearchPage(query, submittedQuery, store!!,
+                                { query = it }, results, searching, searchError,
+                                { submitSearch() }, { showLaw(it, fromSearch = true) })
                         currentTab == "library" ->
                             LibraryPage(store!!, book, section, chapter,
                                 onBack = {
@@ -266,7 +330,8 @@ private fun PageHeading(title: String, subtitle: String) {
 
 @Composable
 private fun SearchPage(
-    query: String, onQueryChange: (String) -> Unit, results: List<Law>,
+    query: String, submittedQuery: String, store: CorpusStore,
+    onQueryChange: (String) -> Unit, results: List<Law>,
     searching: Boolean, searchError: String?, onSearch: () -> Unit,
     onOpen: (Law) -> Unit
 ) {
@@ -329,15 +394,47 @@ private fun SearchPage(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 contentPadding = PaddingValues(bottom = 18.dp)) {
                 itemsIndexed(results, key = { _, item -> item.id }) { index, law ->
-                    LawResultCard(law, index == 0, onOpen)
+                    LawResultCard(law, index == 0, onOpen,
+                        store = store, question = submittedQuery)
                 }
             }
         }
     }
 }
 
+/** Preserve the Rambam's exact text and add only visual evidence highlighting. */
 @Composable
-private fun LawResultCard(law: Law, first: Boolean = false, onOpen: (Law) -> Unit) {
+private fun HighlightedRambamText(
+    text: String, range: PassageMatch?, fontSize: Float,
+    lineHeight: Float, maxLines: Int = Int.MAX_VALUE,
+    onLayout: ((TextLayoutResult) -> Unit)? = null
+) {
+    val highlightColor = if (MaterialTheme.colorScheme.background == DarkPaper)
+        Color(0xFF285C51) else Color(0xFFB8EFDF)
+    val marked = remember(text, range, highlightColor) {
+        buildAnnotatedString {
+            append(text)
+            if (range != null && range.start in text.indices &&
+                range.end in (range.start + 1)..text.length) {
+                addStyle(SpanStyle(background = highlightColor,
+                    fontWeight = FontWeight.SemiBold), range.start, range.end)
+            }
+        }
+    }
+    Text(marked, maxLines = maxLines,
+        overflow = TextOverflow.Ellipsis, fontSize = fontSize.sp,
+        lineHeight = lineHeight.sp, fontFamily = FontFamily.Serif,
+        onTextLayout = onLayout ?: {})
+}
+
+@Composable
+private fun LawResultCard(
+    law: Law, first: Boolean = false, onOpen: (Law) -> Unit,
+    store: CorpusStore? = null, question: String = ""
+) {
+    val passage = remember(law.id, question, store) {
+        if (store != null && question.isNotBlank()) store.relevantPassage(law, question) else null
+    }
     Surface(
         onClick = { onOpen(law) },
         modifier = Modifier.fillMaxWidth(),
@@ -355,9 +452,15 @@ private fun LawResultCard(law: Law, first: Boolean = false, onOpen: (Law) -> Uni
             Text(law.reference, color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.labelLarge)
             Spacer(Modifier.height(10.dp))
-            Text(law.text, maxLines = if (first) Int.MAX_VALUE else 4,
-                overflow = TextOverflow.Ellipsis,
-                fontSize = 19.sp, lineHeight = 29.sp, fontFamily = FontFamily.Serif)
+            HighlightedRambamText(law.text, passage,
+                fontSize = 19f, lineHeight = 29f,
+                maxLines = if (first) Int.MAX_VALUE else 4)
+            if (passage != null) {
+                Spacer(Modifier.height(7.dp))
+                Text("הקטע המודגש הוא התאמה משוערת לשאלה — יש לקרוא גם את ההקשר",
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = .68f))
+            }
             Spacer(Modifier.height(8.dp))
             Text("פתח את ההלכה", color = MaterialTheme.colorScheme.onSurface.copy(alpha = .5f),
                 style = MaterialTheme.typography.labelSmall)
@@ -447,6 +550,7 @@ private fun BookmarksPage(store: CorpusStore, ids: List<Int>, onOpen: (Law) -> U
 @Composable
 private fun ReaderPage(
     law: Law, store: CorpusStore, bookmarked: Boolean, fontSize: Float,
+    question: String,
     onBack: () -> Unit, onNavigate: (Law) -> Unit, onBookmark: () -> Unit,
     onFontSize: (Float) -> Unit
 ) {
@@ -454,6 +558,16 @@ private fun ReaderPage(
         value = withContext(Dispatchers.IO) { store.chapter(law.book, law.section, law.chapter) }
     }
     val index = neighbors.indexOfFirst { it.id == law.id }
+    val passage = remember(law.id, question, store) { store.relevantPassage(law, question) }
+    val scroll = rememberScrollState()
+    var passageTop by remember(law.id, question) { mutableFloatStateOf(-1f) }
+    val density = LocalDensity.current
+    LaunchedEffect(law.id, passageTop) {
+        if (passage != null && passageTop >= 0f) {
+            val offset = with(density) { 150.dp.toPx() }
+            scroll.animateScrollTo((offset + passageTop).toInt().coerceAtLeast(0))
+        } else if (passage == null) scroll.scrollTo(0)
+    }
     Column(Modifier.fillMaxSize()) {
         Row(
             Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 9.dp),
@@ -470,7 +584,7 @@ private fun ReaderPage(
         }
         HorizontalDivider()
         Column(
-            Modifier.weight(1f).verticalScroll(rememberScrollState())
+            Modifier.weight(1f).verticalScroll(scroll)
                 .padding(horizontal = 28.dp, vertical = 24.dp)
         ) {
             Text(law.book, color = MaterialTheme.colorScheme.primary,
@@ -482,8 +596,18 @@ private fun ReaderPage(
             Text("פרק " + law.chapter + " · הלכה " + law.number,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = .6f))
             Spacer(Modifier.height(29.dp))
-            Text(law.text, fontFamily = FontFamily.Serif, fontSize = fontSize.sp,
-                lineHeight = (fontSize * 1.65f).sp)
+            HighlightedRambamText(law.text, passage, fontSize = fontSize,
+                lineHeight = fontSize * 1.65f,
+                onLayout = { layout ->
+                    if (passage != null && passage.start in law.text.indices) {
+                        passageTop = layout.getBoundingBox(passage.start).top
+                    }
+                })
+            if (passage != null) {
+                Spacer(Modifier.height(10.dp))
+                Text("ההדגשה מציינת קטע שאותר כשייך לשאלה. אין להסתמך עליה בלי לקרוא את ההלכה.",
+                    style = MaterialTheme.typography.labelSmall)
+            }
             Spacer(Modifier.height(36.dp))
             HorizontalDivider()
             Spacer(Modifier.height(16.dp))
@@ -546,7 +670,7 @@ private fun SettingsPage(
             }
         }
         Spacer(Modifier.height(22.dp))
-        Text("מהדורת פיתוח · חיפוש מילות מפתח לא מקוון",
+        Text("מהדורת פיתוח · חיפוש סמנטי מקומי + הדגשת מקור",
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = .5f))
     }
 }

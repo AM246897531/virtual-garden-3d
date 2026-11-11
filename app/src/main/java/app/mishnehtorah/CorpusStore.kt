@@ -136,137 +136,135 @@ class CorpusStore private constructor(
         "לפי", "הוא", "אפשר", "כתבו", "הלכה", "הרמבמ"
     )
 
-    // Source-finder ranking only. These associations prioritize retrieval,
-    // NEVER assert equivalent halakhic rulings or generate legal answers.
+    private data class IndexedLaw(val law: Law, val normalizedBody: String)
+    private fun indexedLaws(ids: Collection<Int>): List<IndexedLaw> {
+        if (ids.isEmpty()) return emptyList()
+        val output = ArrayList<IndexedLaw>(ids.size)
+        for (batch in ids.chunked(280)) {
+            val marks = batch.joinToString(",") { "?" }
+            db.rawQuery("SELECT id,book,section,chapter,halakhah,body,norm FROM laws " +
+                "WHERE id IN ($marks)", batch.map { it.toString() }.toTypedArray()).use { c ->
+                while (c.moveToNext()) {
+                    output.add(IndexedLaw(Law(c.getInt(0), c.getString(1), c.getString(2),
+                        c.getInt(3), c.getInt(4), c.getString(5)), c.getString(6)))
+                }
+            }
+        }
+        return output
+    }
+
+    private val highlightCache = object : LinkedHashMap<String, PassageMatch?>(96, .75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, PassageMatch?>?) =
+            size > 96
+    }
+
+    fun relevantPassage(law: Law, question: String): PassageMatch? {
+        if (question.isBlank()) return null
+        val key = "${law.id}:$question"
+        synchronized(highlightCache) {
+            if (highlightCache.containsKey(key)) return highlightCache[key]
+        }
+        val hint = SmartQueryHints.forQuestion(question)
+        val focus = if (hint != null && law.section.endsWith(hint.sectionName) &&
+            law.chapter == hint.chapter && law.number == hint.halakhah) hint.focus else ""
+        val passage = RelevantPassage.find(law.text, question, focus, semantic)
+        synchronized(highlightCache) { highlightCache[key] = passage }
+        return passage
+    }
+
+    /**
+     * All results are verbatim laws from the local corpus. No answer synthesis.
+     * FTS is first used as a *cheap candidate ID source*, then the expensive
+     * law body is loaded only ONCE per unique candidate, instead of repeatedly
+     * materializing 250 full texts per FTS query.
+     */
     fun search(input: String, limit: Int = 50): List<Law> {
         val startedAt = android.os.SystemClock.elapsedRealtime()
-        // Expand common Hebrew abbreviations before both semantic and FTS search.
-        val expandedInput = input.replace("ר״ח", "ראש חודש")
-            .replace("ר\"ח", "ראש חודש")
-            .replace("ר'ח", "ראש חודש")
-        val base = HebrewSearch.normalize(expandedInput)
-        val sourceHint = SmartQueryHints.forQuestion(expandedInput)
-        val isRoshChodesh = ("ראש חודש" in base || "ראש חדש" in base)
-        val isForgetting = ("שכח" in base || "הזכיר" in base || "לא אמר" in base)
+        val expanded = input.replace("ר״ח", "ראש חודש")
+            .replace("ר\"ח", "ראש חודש").replace("ר'ח", "ראש חודש")
+        val base = HebrewSearch.normalize(expanded)
         if (base.isBlank()) return emptyList()
-        val words = base.split(" ").filter {
+        val words = base.split(' ').filter {
             it.length >= 2 && !searchStopWords.contains(it)
-        }.distinct().take(10)
+        }.distinct().take(12)
         if (words.isEmpty()) return emptyList()
-        val variants = HebrewSearch.alternatives(expandedInput).drop(1)
-            .map { HebrewSearch.normalize(it) }
-            .filter { it.isNotBlank() }.distinct()
-        val queries = mutableListOf<String>()
-        if ("יעלה" in base) {
-            queries.add("יעלה* AND ויבא*")
-            queries.add("שכח* AND יעלה*")
+        val hint = SmartQueryHints.forQuestion(expanded)
+        val variants = HebrewSearch.alternatives(expanded).drop(1)
+            .map { HebrewSearch.normalize(it) }.filter { it.isNotBlank() }.distinct()
+        val ids = LinkedHashSet<Int>(880)
+        if (hint != null) {
+            db.rawQuery("SELECT id FROM laws WHERE section LIKE ? " +
+                "AND chapter=? AND halakhah=? LIMIT 1",
+                arrayOf("%" + hint.sectionName, hint.chapter.toString(),
+                    hint.halakhah.toString())).use { c ->
+                if (c.moveToFirst()) ids.add(c.getInt(0))
+            }
         }
-        if ("מזונ" in base) queries.add("שכח* AND מזונ*")
-        if (isRoshChodesh) {
-            queries.add("ראשי* AND חדש*")
-            queries.add("ראש* AND חדש*")
-            if (isForgetting) queries.add("שכח* AND ראש*")
+        val queries = LinkedHashSet<String>()
+        // At most a handful of index searches, rather than up to 24 costly
+        // law-row reads. Prefixing is safe because input was normalized.
+        if (words.isNotEmpty()) {
+            queries.add(words.take(5).joinToString(" AND ") { "$it*" })
+            queries.add(words.take(4).joinToString(" OR ") { "$it*" })
         }
-        queries.add(words.joinToString(" AND ") { it + "*" })
-        queries.add(words.take(5).joinToString(" OR ") { it + "*" })
-        variants.forEach { phrase ->
-            queries.add(phrase.split(" ").filter { it.length >= 2 }
-                .joinToString(" AND ") { it + "*" })
+        if ("יעלה" in base) queries.add("יעלה* AND ויבא*")
+        if ("ראש חודש" in base || "ראש חדש" in base) queries.add("ראשי* AND חדש*")
+        for (phrase in variants.take(3)) {
+            val tokens = phrase.split(' ').filter { it.length >= 3 }.take(4)
+            if (tokens.isNotEmpty()) queries.add(tokens.joinToString(" AND ") { "$it*" })
         }
-        val collected = LinkedHashMap<Int, Law>()
-        // Include the cited source law even when free-text terms do not appear
-        // verbatim in the Rambam: questions often use modern Hebrew.
-        if (sourceHint != null) {
-            laws(lawColumns +
-                "WHERE section LIKE ? AND chapter=? AND halakhah=? LIMIT 1",
-                arrayOf("%" + sourceHint.sectionName, sourceHint.chapter.toString(),
-                    sourceHint.halakhah.toString())).forEach { collected[it.id] = it }
-        }
-        queries.filter { it.isNotBlank() }.distinct().take(24).forEach { ftsQuery ->
+        for (ftsQuery in queries.take(7)) {
             try {
-                val found = laws(lawColumns +
-                    "WHERE id IN (SELECT rowid FROM laws_fts WHERE laws_fts MATCH ? LIMIT 250) LIMIT 250",
-                    arrayOf(ftsQuery))
-                found.forEach { collected.putIfAbsent(it.id, it) }
-            } catch (_: Exception) {
-                // Keep a functioning lexical fallback if FTS is absent.
+                db.rawQuery("SELECT rowid FROM laws_fts WHERE laws_fts MATCH ? LIMIT 280",
+                    arrayOf(ftsQuery)).use { c ->
+                    while (c.moveToNext()) ids.add(c.getInt(0))
+                }
+            } catch (ex: android.database.sqlite.SQLiteException) {
+                android.util.Log.w("RambamSearch", "FTS candidate query skipped", ex)
+            }
+            if (ids.size >= 760) break
+        }
+        val model = semantic.nearest(expanded, 140)
+        val modelScores = model.toMap()
+        for ((id, _) in model) ids.add(id)
+        if (ids.isEmpty()) {
+            db.rawQuery("SELECT id FROM laws WHERE norm LIKE ? LIMIT 200",
+                arrayOf("%" + words.first() + "%")).use { c ->
+                while (c.moveToNext()) ids.add(c.getInt(0))
             }
         }
-        val semanticResults = try {
-            semantic.nearest(expandedInput, 140)
-        } catch (error: Exception) {
-            android.util.Log.e("RambamSearch", "Semantic scoring failed; retaining exact FTS results", error)
-            emptyList()
-        }
-        val semanticScores = semanticResults.toMap()
-        val missingModelIds = semanticResults.map { it.first }.filter { it !in collected }.take(140)
-        if (missingModelIds.isNotEmpty()) {
-            val placeholders = missingModelIds.joinToString(",") { "?" }
-            laws(lawColumns + "WHERE id IN (" + placeholders + ")",
-                missingModelIds.map { it.toString() }.toTypedArray()).forEach {
-                collected.putIfAbsent(it.id, it)
-            }
-        }
-        if (collected.isEmpty()) {
-            laws(lawColumns + "WHERE norm LIKE ? LIMIT 250",
-                arrayOf("%" + words.first() + "%")).forEach {
-                collected[it.id] = it
-            }
-        }
-        fun score(law: Law): Int {
-            val text = HebrewSearch.normalize(law.text)
+        val candidates = indexedLaws(ids)
+        fun relevance(it: IndexedLaw): Int {
+            val law = it.law
+            val content = it.normalizedBody
             val section = HebrewSearch.normalize(law.section)
             var rank = 0
             for (word in words) {
-                if (text.contains(word)) rank += 5 + word.length / 2
-                if (section.contains(word)) rank += 12
+                if (content.contains(word)) rank += 7 + word.length / 2
+                if (section.contains(word)) rank += 17
             }
             for (phrase in variants) {
-                if (text.contains(phrase)) rank += 8
-                if (section.contains(phrase)) rank += 10
+                if (content.contains(phrase)) rank += 13
             }
-            if (text.contains(base)) rank += 45
-            if (sourceHint != null && law.section.endsWith(sourceHint.sectionName)) {
-                rank += 65
-                if (law.chapter == sourceHint.chapter && law.number == sourceHint.halakhah) {
-                    rank += 750
-                }
-            }
+            if (content.contains(base)) rank += 50
             if (("מזונ" in base || "ברכת" in base) && "ברכות" in section) rank += 40
-            if (("תפילה" in base || "תפל" in base) && "תפילה" in section) rank += 30
-            if ("יעלה" in base && "יעלה ויבא" in text) rank += 50
-            if ("שכח" in base && "שכח" in text) rank += 16
-            if ("ראש" in base && "ראשי חדש" in text) rank += 12
-            // Named-festival retrieval: a Hebrew paraphrase like "שכח להזכיר
-            // ראש חודש" should prioritize the law discussing that omission,
-            // not an unrelated chapter merely mentioning the word "ראש".
-            // This is source-ranking only, never an inferred halakhic ruling.
-            if (isRoshChodesh && isForgetting) {
-                if (("ראשי חדש" in text || "ראש חדש" in text) &&
-                    ("שכח" in text || "לא הזכיר" in text || "לא אמר" in text)) {
-                    rank += 280
+            if (("תפילה" in base || "תפל" in base) && "תפילה" in section) rank += 34
+            if (hint != null && law.section.endsWith(hint.sectionName)) {
+                rank += 80
+                if (law.chapter == hint.chapter && law.number == hint.halakhah) {
+                    rank += 1400 // High-precision topic intent; original law is mandatory.
                 }
-                if ("ברכות" in section || "תפילה" in section) rank += 60
             }
-            // Blend exact source retrieval with the learned Hebrew semantic
-            // score. Exact matches remain important for legal reference.
-            rank += ((semanticScores[law.id] ?: 0f) * 62f).toInt()
+            rank += ((modelScores[law.id] ?: 0f) * 75f).toInt()
             return rank
         }
-        // Scoring in the sort comparator repeatedly normalized complete law text
-        // O(N log N) times, causing multi-word queries to appear empty for many
-        // seconds on emulators. Compute each expensive score ONCE instead.
-        val ranked = collected.values.map { law -> law to score(law) }
+        val ranked = candidates.asSequence().map { it.law to relevance(it) }
             .sortedWith(compareByDescending<Pair<Law, Int>> { it.second }
-                .thenBy { it.first.id })
-            .take(limit)
-            .map { it.first }
-        Log.i("RambamSearch",
-            "RESULT count=${ranked.size} model_candidates=${semanticResults.size}" +
-                " hint=${sourceHint?.reason ?: "none"} terms=${words.size} top=" +
-                (ranked.firstOrNull()?.reference ?: "none") + " elapsed_ms=" +
-                (android.os.SystemClock.elapsedRealtime() - startedAt))
+                .thenBy { it.first.id }).take(limit).map { it.first }.toList()
+        Log.i("RambamSearch", "RESULT count=${ranked.size} " +
+            "model_candidates=${model.size} hint=${hint?.reason ?: "none"} " +
+            "terms=${words.size} top=${ranked.firstOrNull()?.reference ?: "none"} " +
+            "elapsed_ms=${android.os.SystemClock.elapsedRealtime() - startedAt}")
         return ranked
     }
-
 }

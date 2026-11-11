@@ -41,3 +41,11 @@ GitHub Actions executes the full sequence and additionally tries an emulator scr
 - GitHub Actions checks multiple real Hebrew questions and simulates character-by-character typing to guard against the previous race condition.
 
 This is local *retrieval*, not a generative rabbinical model. The source text should be read in full and contextualized.
+
+## v0.4.0 — snippet evidence, 50-question quality gate and faster source search
+
+- The search result now visually highlights a bounded, question-relevant **verbatim** passage from the law and continues to display its complete text. The law reader also highlights and scrolls to it. Highlighting is explicitly marked as approximate and does not replace reading the full context.
+- Selection combines token/clause matching, a high-precision topic anchor (if applicable), and locally learned Hebrew term-vector similarity. Unrelated text is not forcibly highlighted if there is insufficient evidence.
+- Real Android emulator tests now execute `scripts/quality_50.json` through the same `CorpusStore.search()` and `relevantPassage()` used by the UI. The 50 questions include direct, paraphrased and moderately compound queries. An independent exact book/chapter/law expected answer is declared for each. **The workflow must fail unless all 50 return the expected top reference and all 50 locate a non-empty passage**. This is a curated regression sample, not evidence that all possible halakhic questions are answered correctly.
+- Search work has been reduced: prefix-FTS now fetches candidate row IDs first, law texts are loaded once in batches, and nearest-semantic retrieval maintains a bounded top-K heap instead of sorting all 15,063 laws. Typing debounce changed from 650 ms to 380 ms. The test log reports median and P95 retrieval latency on the emulator (not network or first-install time).
+- The model is **not a generative LLM**; its only output is source retrieval. The developer should not claim it constructs autonomous halakhic rulings.

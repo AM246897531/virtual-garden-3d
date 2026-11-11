@@ -63,6 +63,8 @@ jobs:
           cp app/src/main/assets/rambam.sqlite artifacts/delivery/
           git archive --format=zip -o artifacts/delivery/MishnehTorah-Android-Source.zip HEAD
           cp ATTRIBUTION_AND_LICENSES.md artifacts/delivery/
+          cp scripts/quality_50.json artifacts/delivery/
+          if [ -f artifacts/screenshots/quality-50-log.txt ]; then cp artifacts/screenshots/quality-50-log.txt artifacts/delivery/; fi
           if [ -d artifacts/screenshots ]; then (cd artifacts && zip -q -r delivery/Screenshots-Real-Android.zip screenshots); fi
           printf "Build: GitHub Actions; Gradle 8.10.2; JDK 17; Android 35.\nAPK: signed Android debug APK.\nSemantic model: INCLUDED (locally trained Hebrew embeddings, bundled as hebrew_semantic.bin).\nSee corpus_report.json for actual completeness.\n" > artifacts/delivery/BUILD_AND_TEST_REPORT.md
           if [ -f artifacts/screenshots/01-home.png ]; then echo "Emulator screenshot capture executed; examine PNGs and logcat for runtime verification." >> artifacts/delivery/BUILD_AND_TEST_REPORT.md; else echo "No emulator screenshots captured: runtime remains unverified." >> artifacts/delivery/BUILD_AND_TEST_REPORT.md; fi
