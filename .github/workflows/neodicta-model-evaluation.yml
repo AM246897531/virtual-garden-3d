@@ -1,0 +1,38 @@
+name: Experimental Hebrew retrieval with NeoDictaBERT
+on:
+  push:
+    branches: [feature/mishneh-torah-offline-android]
+    paths:
+      - scripts/evaluate_neodicta_110.py
+      - .github/workflows/neodicta-model-evaluation.yml
+  workflow_dispatch:
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install evaluation dependencies
+        run: |
+          pip install requests==2.32.3 numpy==2.1.3 scikit-learn==1.6.1
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install 'transformers>=4.46,<5' 'sentence-transformers>=3.4,<6' safetensors
+      - name: Build actual public-domain Rambam text and offsets
+        run: |
+          python scripts/build_corpus.py
+          python scripts/build_passage_index.py
+      - name: Run completely independent source-anchored benchmark
+        run: |
+          set -o pipefail
+          mkdir -p artifacts
+          python -u scripts/evaluate_neodicta_110.py | tee artifacts/neodicta-110.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Rambam-NeoDictaBERT-Independent-110
+          path: artifacts/neodicta-110*
+          if-no-files-found: warn
+          retention-days: 7
