@@ -257,7 +257,12 @@ internal class PreciseEvidenceSearch(
                 title.any { word -> SearchLanguage.matches(alt,word)>.65f }
             }) synonymous+=9f*term.weight
         }
-        return minOf(64f,synonymous+direct*17f+(if (fullPhrase) 34f else 0f))
+        // A single incidental word must not route a question to a long,
+        // unrelated section title. E.g. the ethical word "טוב" does not
+        // imply the legal topic "שביתת יום טוב".
+        val subjectCoverage=direct.toFloat()/title.size
+        val titleEvidence=(synonymous*.65f+direct*12f)*subjectCoverage
+        return minOf(48f,titleEvidence+(if (fullPhrase) 30f else 0f))
     }
 
     private fun termMatch(group: SearchLanguage.Term, tokens: List<String>): Float {
