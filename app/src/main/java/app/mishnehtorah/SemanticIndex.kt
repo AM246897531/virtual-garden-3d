@@ -66,7 +66,8 @@ class SemanticIndex private constructor(
         }
     }
 
-    private val stop = setOf("אני", "מה", "הוא", "היא", "הם", "הן", "את", "של", "על",
+    private val stop = setOf("לברר", "מדבר", "המקור", "מקור", "מנסה", "מבקש", "הרמבמ",
+        "אני", "מה", "הוא", "היא", "הם", "הן", "את", "של", "על",
         "עם", "או", "כי", "לא", "אין", "יש", "אם", "אף", "כל", "גם", "לו", "לה", "בו",
         "זה", "זו", "כך", "כדי", "מן", "אשר", "דבר", "אחר", "אחד", "שני", "שלא",
         "יהיה", "הרי", "אבל", "ואם", "ואין", "ולא", "לפי", "בין", "כגון", "אלא", "עד",
@@ -113,7 +114,7 @@ class SemanticIndex private constructor(
     private fun queryVector(query: String): FloatArray? {
         val q = HebrewSearch.normalize(query).split(" ").filter {
             it.length >= 2 && it !in stop
-        }.distinct().take(16)
+        }.distinct().take(32)
         if (q.isEmpty()) return null
         val result = FloatArray(dimensions)
         var used = 0
