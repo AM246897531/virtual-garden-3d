@@ -458,7 +458,7 @@ internal class PreciseEvidenceSearch(
         // scores and never known answers.
         val segmentQueries=SearchLanguage.evidenceSegments(query)
         val segmentNearest=segmentQueries.flatMap { segment ->
-            characterIndex?.nearest(segment,160).orEmpty()
+            characterIndex?.nearest(segment,240).orEmpty()
         }
         val bridgeLawIds=bridgeNearest.map { it.first }.toHashSet()
         val bridgeAnalyses=bridgeQueries.map { queryText ->
