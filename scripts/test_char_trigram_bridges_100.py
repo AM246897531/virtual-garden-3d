@@ -67,9 +67,10 @@ def bridges(question):
         x in q for x in ("משפיע","מושפע","מתנהג","השפעה","סביבה")
     ):
         out.append("דעות הנהגות חכמים חברים רעים השפעה סביבה מעשים")
-    if any(x in q for x in ("רב","מורה","מלמד")) and any(
-        x in q for x in ("אב","אבא","הורימ")
-    ) and any(x in q for x in ("כבוד","לכבד","חובה","כיבוד")):
+    words=set(q.split())
+    if words.intersection(("רב","הרב","רבו","לרב","מורה","המורה","מלמד","רבנו")) and words.intersection(
+        ("אב","אבא","אבי","אביו","האב","מאבא","מאבי","הורימ","ההורימ")
+    ) and words.intersection(("כבוד","לכבד","חובה","כיבוד","לכבוד","הכבוד")):
         out.append("כבוד רבו מורא רבו אביו כבוד תלמוד תורה")
     return list(dict.fromkeys(out))
 
@@ -98,6 +99,10 @@ def main():
     main=json.loads((ROOT/"scripts/quality_natural_100.json").read_text())
     alternate=json.loads((ROOT/"scripts/quality_new_30.json").read_text())
     assert len(main)==100 and len(alternate)==30
+    # No false expansion for look-alike substrings in other halakhic terms.
+    assert not bridges("מה חובת ערב שבת לגבי אבידה שנמצאה?")
+    assert not bridges("בערב חובה לטפל באבידה של האחר")
+    assert "כבוד רבו" in bridges("למה חובה לכבד את הרב יותר מאבא?")[0]
     check_suite("NATURAL100",main,index,refs)
     check_suite("ADDITIONAL30",alternate,index,refs)
     seen={q["question"] for q in main}
