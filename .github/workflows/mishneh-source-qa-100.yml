@@ -6,6 +6,9 @@ on:
       - scripts/quality_natural_100.json
       - scripts/validate_natural_100.py
       - scripts/test_natural_query_semantics.py
+      - scripts/test_char_trigram_100.py
+      - scripts/test_char_trigram_bridges_100.py
+      - scripts/build_char_trigram_index.py
       - .github/workflows/mishneh-source-qa-100.yml
   workflow_dispatch:
 jobs:
@@ -27,6 +30,8 @@ jobs:
         run: python scripts/build_char_trigram_index.py
       - name: Verify character index binary and 100 natural-language source recall
         run: python scripts/test_char_trigram_100.py
+      - name: Verify 100 plus 30 additional source-recall questions with vocabulary bridges
+        run: python scripts/test_char_trigram_bridges_100.py
       - name: Confirm early-versus-late Hebrew time intent and unmodified evidence offsets
         run: python scripts/test_natural_query_semantics.py
       - name: Validate 100 question references and verbatim answer-anchor text
