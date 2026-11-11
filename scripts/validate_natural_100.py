@@ -43,6 +43,8 @@ def main() -> None:
     report={
         "test_type":"gold-source-integrity-only",
         "question_count":len(rows),"corpus_laws":corpus_size,
+        "distinct_expected_sources":len({r["source"] for r in rows}),
+        "new_natural_paraphrases":sum(r["origin"]=="new-natural-paraphrase" for r in rows),
         "gold_sources_verified":sum(r["reference_found"] for r in rows),
         "highlight_anchors_present":sum(r["anchor_checked"] for r in rows),
         "highlight_anchors_verified":sum(r["anchor_checked"] and r["anchor_in_original"] for r in rows),
