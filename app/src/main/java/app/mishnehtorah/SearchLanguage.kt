@@ -247,7 +247,12 @@ internal object SearchLanguage {
         // A sentence describing that a deadline has ALREADY passed is different
         // from a generic question about when a mitzvah begins or ends.
         val timeMentioned = Regex("זמנ|שעה|שעות|מאוחר|שחרית|בוקר|בקר").containsMatchIn(normalized)
-        val deadlineOverrun = timeMentioned &&
+        val beforeDeadline=Regex(
+            "לפני (ש)?נגמר|לפני (ש)?הסתימ|טרמ נגמר|טרמ הסתימ|" +
+            "עוד לא עבר|עדינ לא עבר|לא עבר הזמנ|לא נגמר הזמנ|" +
+            "הספקתי .*לפני"
+        ).containsMatchIn(normalized)
+        val deadlineOverrun = timeMentioned && !beforeDeadline &&
             Regex("נגמר|הסתימ|חלפ|עבר|איחר|פספס|החמצ|לא הספק|מאוחר מדי").containsMatchIn(normalized)
         val nonJewish=normalized.contains("אינו יהודי") || normalized.contains("לא יהודי")
         val discourseLead=normalized.startsWith("אני רוצה לברר") ||
