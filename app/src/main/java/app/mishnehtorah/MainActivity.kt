@@ -29,6 +29,10 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 private val Paper = Color(0xFFF6F7FA)
 private val Ink = Color(0xFF1D273B)
@@ -39,18 +43,22 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val initialQuery = intent.getStringExtra("debug_query").orEmpty()
-        setContent { RambamApp(initialQuery) }
+        val debugTypeahead = intent.getBooleanExtra("debug_typeahead", false)
+        setContent { RambamApp(initialQuery, debugTypeahead) }
     }
 }
 
 @Composable
-fun RambamApp(initialQuery: String = "") {
+fun RambamApp(initialQuery: String = "", debugTypeahead: Boolean = false) {
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("reading_preferences", 0) }
     var dark by rememberSaveable { mutableStateOf(prefs.getBoolean("dark", false)) }
     var fontSize by rememberSaveable { mutableFloatStateOf(prefs.getFloat("font", 21f)) }
     var currentTab by rememberSaveable { mutableStateOf("search") }
     var query by rememberSaveable { mutableStateOf(initialQuery) }
+    var submittedQuery by rememberSaveable { mutableStateOf(initialQuery) }
+    var searchRefresh by rememberSaveable { mutableIntStateOf(0) }
+    val searchMutex = remember { Mutex() }
     var book by rememberSaveable { mutableStateOf<String?>(null) }
     var section by rememberSaveable { mutableStateOf<String?>(null) }
     var chapter by rememberSaveable { mutableStateOf<Int?>(null) }
@@ -71,24 +79,58 @@ fun RambamApp(initialQuery: String = "") {
             loadingError = ex.message ?: "טעינת ספריית הרמב״ם נכשלה"
         }
     }
-    LaunchedEffect(store, query) {
+    // Do not run heavyweight SQLite+semantic retrieval for each keystroke.
+    // Delayed autosubmit preserves the previous instant-search experience,
+    // while IME Search and the visible button submit immediately.
+    LaunchedEffect(query) {
+        delay(650)
+        submittedQuery = query.trim()
+    }
+    LaunchedEffect(debugTypeahead) {
+        if (debugTypeahead) {
+            val testQuestion = "מה עושים אם שכחתי יעלה ויבוא בברכת המזון"
+            query = ""
+            submittedQuery = ""
+            for (position in testQuestion.indices) {
+                query = testQuestion.substring(0, position + 1)
+                delay(28)
+            }
+            android.util.Log.i("RambamSearch", "TYPEAHEAD_INPUT_COMPLETE")
+        }
+    }
+    LaunchedEffect(store, submittedQuery, searchRefresh) {
         val s = store
         searchError = null
-        if (s == null || query.isBlank()) {
+        if (s == null || submittedQuery.isBlank()) {
             searching = false
             results = emptyList()
         } else {
             searching = true
-            results = emptyList()
             try {
-                results = withContext(Dispatchers.IO) { s.search(query) }
-            } catch (ex: Exception) {
-                searchError = "אירעה שגיאה בחיפוש. אפשר לנסות שוב."
-                android.util.Log.e("RambamSearch", "Search query failed", ex)
-            } finally {
+                // Serialize DB and model searches, and never mistake a cancelled
+                // stale request for a search error on the latest typed question.
+                val fresh = withContext(Dispatchers.IO) {
+                    searchMutex.withLock { s.search(submittedQuery) }
+                }
+                results = fresh
                 searching = false
+                if (debugTypeahead && query == "מה עושים אם שכחתי יעלה ויבוא בברכת המזון") {
+                    android.util.Log.i("RambamSearch", "TYPEAHEAD_RESULT_READY count=${fresh.size}")
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (ex: Exception) {
+                results = emptyList()
+                searchError = "החיפוש נכשל (${ex.javaClass.simpleName}). אפשר לנסות שוב."
+                searching = false
+                android.util.Log.e("RambamSearch", "Search query failed", ex)
             }
         }
+    }
+
+    fun submitSearch() {
+        submittedQuery = query.trim()
+        searchRefresh += 1
     }
 
     fun saveBookmarks() {
@@ -178,7 +220,8 @@ fun RambamApp(initialQuery: String = "") {
                                     prefs.edit().putFloat("font", fontSize).apply()
                                 })
                         currentTab == "search" ->
-                            SearchPage(query, { query = it }, results, searching, searchError, { showLaw(it) })
+                            SearchPage(query, { query = it }, results, searching, searchError,
+                                { submitSearch() }, { showLaw(it) })
                         currentTab == "library" ->
                             LibraryPage(store!!, book, section, chapter,
                                 onBack = {
@@ -224,7 +267,8 @@ private fun PageHeading(title: String, subtitle: String) {
 @Composable
 private fun SearchPage(
     query: String, onQueryChange: (String) -> Unit, results: List<Law>,
-    searching: Boolean, searchError: String?, onOpen: (Law) -> Unit
+    searching: Boolean, searchError: String?, onSearch: () -> Unit,
+    onOpen: (Law) -> Unit
 ) {
     Column(Modifier.fillMaxSize().padding(horizontal = 22.dp)) {
         Spacer(Modifier.height(34.dp))
@@ -235,14 +279,15 @@ private fun SearchPage(
             placeholder = { Text("שאל שאלה או חפש הלכה ברמב״ם...") },
             leadingIcon = { Icon(Icons.Outlined.Search, "חיפוש") },
             trailingIcon = {
-                if (query.isNotBlank()) IconButton(onClick = { onQueryChange("") }) {
-                    Icon(Icons.Outlined.Close, "נקה חיפוש")
+                IconButton(onClick = onSearch, enabled = query.isNotBlank()) {
+                    Icon(Icons.Outlined.ArrowBack, "חפש שאלה")
                 }
             },
             singleLine = false,
             maxLines = 3,
             shape = RoundedCornerShape(25.dp),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(onSearch = { onSearch() }),
             modifier = Modifier.fillMaxWidth(),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedContainerColor = MaterialTheme.colorScheme.surface,
@@ -259,12 +304,12 @@ private fun SearchPage(
                     Text("לימוד מתוך המקור", fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.primary)
                     Spacer(Modifier.height(7.dp))
-                    Text("מנוע הטמעות עברי מקומי משלב התאמת משמעות עם חיפוש מדויק. אפשר לחפש מילים, הלכות ונושאים בשפה טבעית. התוצאות מציגות את לשון הרמב״ם והמקור המדויק — לא פסק הלכה שנוצר בידי בינה מלאכותית.",
+                    Text("אפשר להקליד שאלה הלכתית קצרה. מנוע עברי מקומי ישלב התאמה סמנטית עם חיפוש מקור מדויק, ויציג את לשון הרמב״ם במלואה, ללא יצירת פסק חדש.",
                         lineHeight = 25.sp)
                 }
             }
         } else {
-            Text("תוצאות מתוך משנה תורה", fontWeight = FontWeight.Bold,
+            Text("התאמה חכמה לטקסט הרמב״ם", fontWeight = FontWeight.Bold,
                 style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(12.dp))
             if (searching) {
@@ -275,11 +320,13 @@ private fun SearchPage(
                 }
             } else if (searchError != null) {
                 Text(searchError, color = MaterialTheme.colorScheme.error)
+                TextButton(onClick = onSearch) { Text("נסה שוב") }
             } else if (results.isEmpty()) {
                 Text("לא נמצאה התאמה. נסה ניסוח קצר יותר או מונחים מלשון הרמב״ם.",
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = .65f))
             }
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp),
+            LazyColumn(modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
                 contentPadding = PaddingValues(bottom = 18.dp)) {
                 itemsIndexed(results, key = { _, item -> item.id }) { index, law ->
                     LawResultCard(law, index == 0, onOpen)
@@ -299,10 +346,17 @@ private fun LawResultCard(law: Law, first: Boolean = false, onOpen: (Law) -> Uni
         shadowElevation = if (first) 4.dp else 1.dp
     ) {
         Column(Modifier.padding(20.dp)) {
+            if (first) {
+                Text("המקור המתאים ביותר • לשון הרמב״ם", fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.titleSmall)
+                Spacer(Modifier.height(12.dp))
+            }
             Text(law.reference, color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.labelLarge)
             Spacer(Modifier.height(10.dp))
-            Text(law.text, maxLines = 4, overflow = TextOverflow.Ellipsis,
+            Text(law.text, maxLines = if (first) Int.MAX_VALUE else 4,
+                overflow = TextOverflow.Ellipsis,
                 fontSize = 19.sp, lineHeight = 29.sp, fontFamily = FontFamily.Serif)
             Spacer(Modifier.height(8.dp))
             Text("פתח את ההלכה", color = MaterialTheme.colorScheme.onSurface.copy(alpha = .5f),

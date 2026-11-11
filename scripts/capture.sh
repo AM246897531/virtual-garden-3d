@@ -33,6 +33,10 @@ start_query() {
     match="$(adb logcat -d -s RambamSearch:I '*:S' | grep 'RESULT count=[1-9]' | tail -n 1 || true)"
     if [[ -n "$match" ]]; then
       echo "SEARCH_RESULT_VERIFIED $1 : $match"
+      if [[ "$match" != *"model_candidates="* || "$match" == *"model_candidates=0"* ]]; then
+        echo "FAILED: no semantic-model candidates in query: $match" >&2
+        return 1
+      fi
       if [[ -n "$expected_section" && "$match" != *"$expected_section"* ]]; then
         echo "FAILED: expected top search result to cite '$expected_section', got: $match" >&2
         adb logcat -d -t 1200 > "$OUT/quality-failure.txt"
@@ -56,7 +60,7 @@ tap() { adb shell input tap "$1" "$2"; sleep 2; }
 tap $((W/2)) $((H*20/100))
 screenshot 02-search-focused
 adb shell input keyevent 4 || true
-start_query "שכחתי יעלה ויבוא בברכת המזון" "הלכות ברכות"
+start_query "שכחתי יעלה ויבוא בברכת המזון" "פרק 2 · הלכה 13"
 screenshot 03-birkat-hamazon-query
 tap $((W/2)) $((H*43/100))
 screenshot 04-opened-search-result
@@ -65,6 +69,39 @@ start_query "מה הדין אדם ששכח להזכיר ראש חודש" "הלכ
 screenshot 05-paraphrase-query
 start_query "ר״ח ברכה חוזר" "הלכות ברכות"
 screenshot 06-abbreviation-query
+# Test real question intent extraction + full source law on the Android runtime.
+start_query "כמה פעמים קוראים קריאת שמע ביום" "פרק 1 · הלכה 1"
+screenshot 16-shema-natural-question
+start_query "מותר לאכול לפני קידוש בשבת" "פרק 29 · הלכה 5"
+screenshot 17-kiddush-natural-question
+start_query "מתי מדליקים נרות חנוכה" "פרק 4 · הלכה 5"
+screenshot 18-hanukkah-time-natural-question
+start_query "כמה נרות מדליקים בחנוכה" "פרק 4 · הלכה 1"
+screenshot 19-hanukkah-count-natural-question
+start_query "האם מותר לספר לשון הרע" "פרק 7 · הלכה 2"
+screenshot 20-lashon-hara-natural-question
+# Key regression: simulate a sequence of incremental real Compose text edits.
+# Earlier releases incorrectly handled cancellation as a search failure.
+adb shell am force-stop "$PKG"
+adb logcat -c
+adb shell am start -n "$PKG/.MainActivity" --ez debug_typeahead true
+for attempt in $(seq 1 40); do
+  if adb logcat -d -s RambamSearch:I '*:S' | grep -q 'TYPEAHEAD_RESULT_READY count=[1-9]'; then
+    echo 'TYPEAHEAD_SEARCH_VERIFIED'
+    break
+  fi
+  if [[ "$attempt" == "40" ]]; then
+    echo 'FAILED: incremental typing never completed smart search' >&2
+    adb logcat -d -t 1300 > "$OUT/typeahead-failure.txt"
+    exit 1
+  fi
+  sleep 2
+done
+if adb logcat -d -s RambamSearch:E '*:S' | grep -q 'Search query failed'; then
+  echo 'FAILED: old cancellation bug reproduced' >&2
+  exit 1
+fi
+screenshot 21-typeahead-hebrew-question
 adb shell am force-stop "$PKG"
 adb shell am start -n "$PKG/.MainActivity"
 sleep 7

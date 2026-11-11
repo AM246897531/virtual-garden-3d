@@ -30,3 +30,14 @@ gradle :app:assembleDebug
 ```
 
 GitHub Actions executes the full sequence and additionally tries an emulator screenshot smoke test. The signed debug APK is installable but is **not** a release-signed Play Store package. Consult `BUILD_AND_TEST_REPORT.md` in the delivered build artifact to verify the emulator test outcome. The UI includes RTL browsing, search, bookmarks, reader controls and light/dark modes.
+
+
+## v0.3.0 — reliable smart question search
+- Query submissions are debounced (650ms) with an immediate search action and keyboard IME Search; cancellation of superseded lookups is not displayed as an error.
+- Each query runs against the bundled Hebrew semantic embedding index and indexed local Mishneh Torah database. No runtime network or API calls.
+- High-precision matching of common natural-language halakhic questions points to source halakhot rather than generating a ruling.
+- The top result displays the **complete, unaltered Rambam text and exact citation** directly; other relevant sources follow.
+- Existing installations migrate their SQLite corpus automatically on the first launch of this version.
+- GitHub Actions checks multiple real Hebrew questions and simulates character-by-character typing to guard against the previous race condition.
+
+This is local *retrieval*, not a generative rabbinical model. The source text should be read in full and contextualized.

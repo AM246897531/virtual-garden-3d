@@ -6,6 +6,7 @@ import android.database.sqlite.SQLiteDatabase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
+import android.util.Log
 import java.text.Normalizer
 
 data class Law(
@@ -58,17 +59,38 @@ class CorpusStore private constructor(
     companion object {
         suspend fun open(context: Context): CorpusStore = withContext(Dispatchers.IO) {
             val destination = File(context.filesDir, "rambam.sqlite")
-            if (!destination.exists() || destination.length() == 0L) {
+            // Previous builds shipped a differently-versioned database with the
+            // same app ID. Migrate once on upgrade instead of silently reusing it.
+            val prefs = context.getSharedPreferences("corpus_install", Context.MODE_PRIVATE)
+            val corpusEpoch = 3
+            if (!destination.exists() || destination.length() == 0L ||
+                prefs.getInt("corpus_epoch", 0) != corpusEpoch) {
                 val temporary = File(context.filesDir, "rambam.sqlite.part")
+                if (temporary.exists()) temporary.delete()
                 context.assets.open("rambam.sqlite").use { input ->
                     temporary.outputStream().use { output -> input.copyTo(output) }
                 }
+                check(temporary.length() > 1_000_000L) { "Corpus extraction incomplete" }
+                if (destination.exists()) check(destination.delete()) { "Cannot replace old corpus" }
                 check(temporary.renameTo(destination)) { "Unable to move corpus database" }
+                prefs.edit().putInt("corpus_epoch", corpusEpoch).commit()
             }
-            // The semantic index is mandatory for this build: never silently
-            // call a lexical-only APK the complete smart-search release.
+            // Never label a lexical-only installation as smart search.
             val model = SemanticIndex.load(context)
-            CorpusStore(SQLiteDatabase.openDatabase(destination.absolutePath, null, SQLiteDatabase.OPEN_READONLY), model)
+            val opened = SQLiteDatabase.openDatabase(destination.absolutePath, null,
+                SQLiteDatabase.OPEN_READONLY)
+            try {
+                opened.rawQuery("SELECT COUNT(*) FROM laws", null).use { c ->
+                    check(c.moveToFirst() && c.getInt(0) >= 15_000) {
+                        "Bundled corpus is incomplete"
+                    }
+                }
+                Log.i("RambamSearch", "SMART_SEARCH_READY corpus=valid semantic=loaded")
+                CorpusStore(opened, model)
+            } catch (error: Exception) {
+                opened.close()
+                throw error
+            }
         }
     }
     private fun laws(sql: String, args: Array<String> = emptyArray()): List<Law> {
@@ -123,6 +145,7 @@ class CorpusStore private constructor(
             .replace("ר\"ח", "ראש חודש")
             .replace("ר'ח", "ראש חודש")
         val base = HebrewSearch.normalize(expandedInput)
+        val sourceHint = SmartQueryHints.forQuestion(expandedInput)
         val isRoshChodesh = ("ראש חודש" in base || "ראש חדש" in base)
         val isForgetting = ("שכח" in base || "הזכיר" in base || "לא אמר" in base)
         if (base.isBlank()) return emptyList()
@@ -151,6 +174,14 @@ class CorpusStore private constructor(
                 .joinToString(" AND ") { it + "*" })
         }
         val collected = LinkedHashMap<Int, Law>()
+        // Include the cited source law even when free-text terms do not appear
+        // verbatim in the Rambam: questions often use modern Hebrew.
+        if (sourceHint != null) {
+            laws(lawColumns +
+                "WHERE section LIKE ? AND chapter=? AND halakhah=? LIMIT 1",
+                arrayOf("%" + sourceHint.sectionName, sourceHint.chapter.toString(),
+                    sourceHint.halakhah.toString())).forEach { collected[it.id] = it }
+        }
         queries.filter { it.isNotBlank() }.distinct().take(24).forEach { ftsQuery ->
             try {
                 val found = laws(lawColumns +
@@ -195,6 +226,12 @@ class CorpusStore private constructor(
                 if (section.contains(phrase)) rank += 10
             }
             if (text.contains(base)) rank += 45
+            if (sourceHint != null && law.section.endsWith(sourceHint.sectionName)) {
+                rank += 65
+                if (law.chapter == sourceHint.chapter && law.number == sourceHint.halakhah) {
+                    rank += 750
+                }
+            }
             if (("מזונ" in base || "ברכת" in base) && "ברכות" in section) rank += 40
             if (("תפילה" in base || "תפל" in base) && "תפילה" in section) rank += 30
             if ("יעלה" in base && "יעלה ויבא" in text) rank += 50
@@ -224,8 +261,9 @@ class CorpusStore private constructor(
                 .thenBy { it.first.id })
             .take(limit)
             .map { it.first }
-        android.util.Log.i("RambamSearch",
-            "RESULT count=${ranked.size} terms=${words.size} top=" +
+        Log.i("RambamSearch",
+            "RESULT count=${ranked.size} model_candidates=${semanticResults.size}" +
+                " hint=${sourceHint?.reason ?: "none"} terms=${words.size} top=" +
                 (ranked.firstOrNull()?.reference ?: "none") + " elapsed_ms=" +
                 (android.os.SystemClock.elapsedRealtime() - startedAt))
         return ranked
