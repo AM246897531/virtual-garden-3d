@@ -10,6 +10,7 @@ on:
       - scripts/test_char_trigram_bridges_100.py
       - scripts/test_verbose_query_recall_100.py
       - scripts/test_focused_conversation_100.py
+      - scripts/check_kotlin_syntax_no_compile.py
       - scripts/build_char_trigram_index.py
       - scripts/build_gold_answer_offsets.py
       - .github/workflows/mishneh-source-qa-100.yml
@@ -27,6 +28,10 @@ jobs:
           python-version: '3.11'
       - name: Install text corpus fetch dependency
         run: python -m pip install requests==2.32.3 'scikit-learn>=1.5,<2' 'numpy>=1.26,<3'
+      - name: Install Kotlin grammar parser (NO Kotlin compiler)
+        run: python -m pip install 'tree-sitter>=0.25,<0.27' 'tree-sitter-kotlin==1.1.0'
+      - name: Parse changed Kotlin sources, no APK or compiler
+        run: python scripts/check_kotlin_syntax_no_compile.py
       - name: Rebuild original Mishneh Torah corpus - no Gradle or Android compilation
         run: python scripts/build_corpus.py
       - name: Build 15MB offline source-only character-recall index
@@ -67,6 +72,7 @@ jobs:
             artifacts/corpus_report.json
             artifacts/char3_report.json
             artifacts/gold_answer_offsets_100.json
+            artifacts/kotlin_parse_no_compile.json
             artifacts/experimental_e5_100.json
             artifacts/experimental_e5_scores_100.npz
           retention-days: 30
