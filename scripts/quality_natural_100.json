@@ -6,7 +6,8 @@
     "chapter": 1,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 1
+    "difficulty": 1,
+    "highlight_contains": "פעמים בכל יום קוראין קריאת שמע"
   },
   {
     "tier": 1,
@@ -15,7 +16,8 @@
     "chapter": 1,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 1
+    "difficulty": 1,
+    "highlight_contains": "מצות עשה להתפלל בכל יום"
   },
   {
     "tier": 1,
@@ -24,7 +26,8 @@
     "chapter": 3,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 1
+    "difficulty": 1,
+    "highlight_contains": "וזמנה עד סוף שעה רביעית"
   },
   {
     "tier": 1,
@@ -33,7 +36,8 @@
     "chapter": 1,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 1
+    "difficulty": 1,
+    "highlight_contains": "ואינו חייב מן התורה אלא אם כן שבע"
   },
   {
     "tier": 1,
@@ -52,7 +56,8 @@
     "chapter": 6,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 1
+    "difficulty": 1,
+    "highlight_contains": "צריך נטילת ידים תחלה וסוף"
   },
   {
     "tier": 1,
@@ -61,7 +66,8 @@
     "chapter": 2,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 1
+    "difficulty": 1,
+    "highlight_contains": "דחויה היא שבת אצל סכנת נפשות"
   },
   {
     "tier": 1,
@@ -70,7 +76,8 @@
     "chapter": 7,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 1
+    "difficulty": 1,
+    "highlight_contains": "ומנין כל אבות מלאכות ארבעים חסר אחת"
   },
   {
     "tier": 1,
@@ -89,7 +96,8 @@
     "chapter": 4,
     "law": 5,
     "origin": "prior-regression",
-    "difficulty": 1
+    "difficulty": 1,
+    "highlight_contains": "אין מדליקין נרות חנכה קדם שתשקע החמה"
   },
   {
     "tier": 1,
@@ -98,7 +106,8 @@
     "chapter": 6,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 1
+    "difficulty": 1,
+    "highlight_contains": "מצות עשה מן התורה לאכל מצה בליל חמשה עשר"
   },
   {
     "tier": 1,
@@ -107,7 +116,8 @@
     "chapter": 1,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 1
+    "difficulty": 1,
+    "highlight_contains": "כל האוכל כזית חמץ בפסח"
   },
   {
     "tier": 1,
@@ -116,7 +126,8 @@
     "chapter": 1,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 1
+    "difficulty": 1,
+    "highlight_contains": "מצות עשה של תורה לשמע תרועת השופר"
   },
   {
     "tier": 1,
@@ -125,7 +136,8 @@
     "chapter": 4,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 1
+    "difficulty": 1,
+    "highlight_contains": "אין פחות מעשרה טפחים ולא יתר על עשרים אמה"
   },
   {
     "tier": 1,
@@ -134,7 +146,8 @@
     "chapter": 5,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 1
+    "difficulty": 1,
+    "highlight_contains": "אין מסככין אלא בדבר שגדולו מן הארץ"
   },
   {
     "tier": 1,
@@ -143,7 +156,8 @@
     "chapter": 3,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 1
+    "difficulty": 1,
+    "highlight_contains": "כסות שיש לה ארבע כנפים"
   },
   {
     "tier": 1,
@@ -152,7 +166,8 @@
     "chapter": 4,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 1
+    "difficulty": 1,
+    "highlight_contains": "מניחין אותן על הקדקד"
   },
   {
     "tier": 1,
@@ -161,7 +176,8 @@
     "chapter": 5,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 1
+    "difficulty": 1,
+    "highlight_contains": "כותבין שתי פרשיות שמע והיה אם שמוע"
   },
   {
     "tier": 1,
@@ -170,7 +186,8 @@
     "chapter": 7,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 1
+    "difficulty": 1,
+    "highlight_contains": "מצות עשה על כל איש ואיש מישראל לכתוב ספר תורה לעצמו"
   },
   {
     "tier": 1,
@@ -179,7 +196,8 @@
     "chapter": 7,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 1
+    "difficulty": 1,
+    "highlight_contains": "מצות עשה לתן צדקה לעניים"
   },
   {
     "tier": 2,
@@ -188,7 +206,8 @@
     "chapter": 2,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 2
+    "difficulty": 2,
+    "highlight_contains": "לא יצא ידי חובתו"
   },
   {
     "tier": 2,
@@ -197,7 +216,8 @@
     "chapter": 3,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 2
+    "difficulty": 2,
+    "highlight_contains": "אם עבר או טעה והתפלל אחר ארבע עד חצות היום"
   },
   {
     "tier": 2,
@@ -206,7 +226,8 @@
     "chapter": 4,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 2
+    "difficulty": 2,
+    "highlight_contains": "חמשה דברים מעכבין את התפלה"
   },
   {
     "tier": 2,
@@ -215,7 +236,8 @@
     "chapter": 2,
     "law": 13,
     "origin": "prior-regression",
-    "difficulty": 2
+    "difficulty": 2,
+    "highlight_contains": "בראשי חדשים שכח ולא אמר יעלה ויבא"
   },
   {
     "tier": 2,
@@ -224,7 +246,8 @@
     "chapter": 2,
     "law": 12,
     "origin": "prior-regression",
-    "difficulty": 2
+    "difficulty": 2,
+    "highlight_contains": "שכח ולא הזכיר בשבת או ביום טוב קדושת היום"
   },
   {
     "tier": 2,
@@ -233,7 +256,8 @@
     "chapter": 4,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 2
+    "difficulty": 2,
+    "highlight_contains": "אכל כשהוא מהלך יושב במקום שפסק ויברך"
   },
   {
     "tier": 2,
@@ -242,7 +266,8 @@
     "chapter": 5,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 2
+    "difficulty": 2,
+    "highlight_contains": "אלא זה חובה"
   },
   {
     "tier": 2,
@@ -251,7 +276,8 @@
     "chapter": 3,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 2
+    "difficulty": 2,
+    "highlight_contains": "מתר להתחיל מלאכה מערב שבת"
   },
   {
     "tier": 2,
@@ -260,7 +286,8 @@
     "chapter": 29,
     "law": 5,
     "origin": "prior-regression",
-    "difficulty": 2
+    "difficulty": 2,
+    "highlight_contains": "אסור לאדם לאכל או לשתות יין משקדש היום עד שיקדש"
   },
   {
     "tier": 2,
@@ -269,7 +296,8 @@
     "chapter": 2,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 2
+    "difficulty": 2,
+    "highlight_contains": "הקורא את המגלה למפרע לא יצא"
   },
   {
     "tier": 2,
@@ -288,7 +316,8 @@
     "chapter": 7,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 2
+    "difficulty": 2,
+    "highlight_contains": "מצות עשה של תורה לספר בנסים ונפלאות"
   },
   {
     "tier": 2,
@@ -297,7 +326,8 @@
     "chapter": 2,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 2
+    "difficulty": 2,
+    "highlight_contains": "מצות עשה מן התורה להשבית החמץ"
   },
   {
     "tier": 2,
@@ -306,7 +336,8 @@
     "chapter": 3,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 2
+    "difficulty": 2,
+    "highlight_contains": "תשע תקיעות"
   },
   {
     "tier": 2,
@@ -315,7 +346,8 @@
     "chapter": 2,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 2
+    "difficulty": 2,
+    "highlight_contains": "תכלת האמורה בתורה בכל מקום היא הצמר הצבוע"
   },
   {
     "tier": 2,
@@ -324,7 +356,8 @@
     "chapter": 6,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 2
+    "difficulty": 2,
+    "highlight_contains": "עשרה תנאין יש בבית"
   },
   {
     "tier": 2,
@@ -333,7 +366,8 @@
     "chapter": 1,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 2
+    "difficulty": 2,
+    "highlight_contains": "כשיעשה תשובה וישוב מחטאו חיב להתודות"
   },
   {
     "tier": 2,
@@ -352,7 +386,8 @@
     "chapter": 1,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 2
+    "difficulty": 2,
+    "highlight_contains": "קטן אביו חיב ללמדו תורה"
   },
   {
     "tier": 2,
@@ -361,7 +396,8 @@
     "chapter": 5,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 2
+    "difficulty": 2,
+    "highlight_contains": "חיב בכבוד רבו ויראתו יתר מאביו"
   },
   {
     "tier": 3,
@@ -370,7 +406,8 @@
     "chapter": 2,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 3
+    "difficulty": 3,
+    "highlight_contains": "לא כון לבו בפסוק ראשון"
   },
   {
     "tier": 3,
@@ -389,7 +426,8 @@
     "chapter": 3,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 3
+    "difficulty": 3,
+    "highlight_contains": "מתר להתחיל מלאכה מערב שבת"
   },
   {
     "tier": 3,
@@ -398,7 +436,8 @@
     "chapter": 4,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 3
+    "difficulty": 3,
+    "highlight_contains": "אכל כשהוא מהלך יושב במקום שפסק ויברך"
   },
   {
     "tier": 3,
@@ -407,7 +446,8 @@
     "chapter": 4,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 3
+    "difficulty": 3,
+    "highlight_contains": "ולא יתר על עשרים אמה"
   },
   {
     "tier": 3,
@@ -416,7 +456,8 @@
     "chapter": 4,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 3
+    "difficulty": 3,
+    "highlight_contains": "מניחין אותן על הקדקד"
   },
   {
     "tier": 3,
@@ -425,7 +466,8 @@
     "chapter": 1,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 3
+    "difficulty": 3,
+    "highlight_contains": "שאם גזל חיב להחזיר"
   },
   {
     "tier": 3,
@@ -434,7 +476,8 @@
     "chapter": 5,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 3
+    "difficulty": 3,
+    "highlight_contains": "רשות לכל אדם נתונה"
   },
   {
     "tier": 3,
@@ -443,7 +486,8 @@
     "chapter": 6,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 3
+    "difficulty": 3,
+    "highlight_contains": "אחר רעיו וחבריו"
   },
   {
     "tier": 3,
@@ -452,7 +496,8 @@
     "chapter": 1,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 3
+    "difficulty": 3,
+    "highlight_contains": "מצות עשה מן התורה לזעק ולהריע בחצוצרות"
   },
   {
     "tier": 1,
@@ -461,7 +506,8 @@
     "chapter": 2,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 1
+    "difficulty": 1,
+    "highlight_contains": "המזבח מקומו מכון ביותר ואין משנין אותו ממקומו לעולם"
   },
   {
     "tier": 2,
@@ -470,7 +516,8 @@
     "chapter": 2,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 2
+    "difficulty": 2,
+    "highlight_contains": "הרי זו חוזרת לבעליה בעצמה"
   },
   {
     "tier": 1,
@@ -479,7 +526,8 @@
     "chapter": 2,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 1
+    "difficulty": 1,
+    "highlight_contains": "נטף ושחלת וחלבנה ולבנה"
   },
   {
     "tier": 1,
@@ -488,7 +536,8 @@
     "chapter": 2,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 1
+    "difficulty": 1,
+    "highlight_contains": "ובכל מלין ואפילו בצור ובזכוכית"
   },
   {
     "tier": 1,
@@ -497,7 +546,8 @@
     "chapter": 2,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 1
+    "difficulty": 1,
+    "highlight_contains": "אין רוכבין על סוסו ואין יושבין על כסאו"
   },
   {
     "tier": 1,
@@ -506,7 +556,8 @@
     "chapter": 2,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 1
+    "difficulty": 1,
+    "highlight_contains": "היין והסלת שמביאין עם הקרבן הם הנקראין נסכים"
   },
   {
     "tier": 2,
@@ -515,7 +566,8 @@
     "chapter": 2,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 2
+    "difficulty": 2,
+    "highlight_contains": "אבל בבדיקות אפלו שניהן אומרין אין אנו יודעין עדותן קימת"
   },
   {
     "tier": 2,
@@ -524,7 +576,8 @@
     "chapter": 2,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 2
+    "difficulty": 2,
+    "highlight_contains": "אם נתן מתנה אחת בלבד כפר"
   },
   {
     "tier": 1,
@@ -533,7 +586,8 @@
     "chapter": 2,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 1
+    "difficulty": 1,
+    "highlight_contains": "אלא שני אנשים כשרים"
   },
   {
     "tier": 1,
@@ -542,7 +596,8 @@
     "chapter": 2,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 1
+    "difficulty": 1,
+    "highlight_contains": "הרי זה נהרג בבית דין"
   },
   {
     "tier": 2,
@@ -551,7 +606,8 @@
     "chapter": 2,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 2
+    "difficulty": 2,
+    "highlight_contains": "שכל העונה אמן אחר שבועה כמוציא שבועה מפיו"
   },
   {
     "tier": 1,
@@ -560,7 +616,8 @@
     "chapter": 2,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 1
+    "difficulty": 1,
+    "highlight_contains": "אבל החלין אסור לשחטן בעזרה"
   },
   {
     "tier": 1,
@@ -569,7 +626,8 @@
     "chapter": 2,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 1
+    "difficulty": 1,
+    "highlight_contains": "אין העכו ם נעשה שליח"
   },
   {
     "tier": 1,
@@ -578,7 +636,8 @@
     "chapter": 2,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 1
+    "difficulty": 1,
+    "highlight_contains": "מושיבין מלמדי תינוקות בכל מדינה ומדינה"
   },
   {
     "tier": 2,
@@ -587,7 +646,8 @@
     "chapter": 2,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 2
+    "difficulty": 2,
+    "highlight_contains": "כל אכל אדם הנשמר שגדוליו מן הארץ חיב בתרומה"
   },
   {
     "tier": 2,
@@ -596,7 +656,8 @@
     "chapter": 1,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 2
+    "difficulty": 2,
+    "highlight_contains": "החובל בחברו חיב לשלם לו חמשה דברים"
   },
   {
     "tier": 2,
@@ -605,7 +666,8 @@
     "chapter": 3,
     "law": 1,
     "origin": "prior-regression",
-    "difficulty": 2
+    "difficulty": 2,
+    "highlight_contains": "תפלת השחר מצותה שיתחיל להתפלל עם הנץ החמה"
   },
   {
     "tier": 3,
@@ -683,7 +745,7 @@
     "section": "נזקי ממון",
     "chapter": 1,
     "law": 1,
-    "highlight_contains": "",
+    "highlight_contains": "שהזיקה הבעלים חיבין לשלם",
     "origin": "prior-regression",
     "difficulty": 3
   },
@@ -693,7 +755,7 @@
     "section": "עירובין",
     "chapter": 1,
     "law": 1,
-    "highlight_contains": "",
+    "highlight_contains": "דין תורה הוא שיהיו כלן מתרין לטלטל בכל החצר",
     "origin": "prior-regression",
     "difficulty": 3
   },
@@ -703,7 +765,7 @@
     "section": "שביתת עשור",
     "chapter": 1,
     "law": 1,
-    "highlight_contains": "",
+    "highlight_contains": "מצות עשה לשבת ממלאכה בעשור לחדש השביעי",
     "origin": "prior-regression",
     "difficulty": 3
   },
@@ -794,7 +856,7 @@
     "section": "קריאת שמע",
     "chapter": 2,
     "law": 1,
-    "highlight_contains": "",
+    "highlight_contains": "הקורא את שמע ולא כון לבו בפסוק ראשון",
     "origin": "new-natural-paraphrase"
   },
   {
@@ -804,7 +866,7 @@
     "section": "ברכות",
     "chapter": 2,
     "law": 13,
-    "highlight_contains": "",
+    "highlight_contains": "בראשי חדשים שכח ולא אמר יעלה ויבא",
     "origin": "new-natural-paraphrase"
   },
   {
@@ -814,7 +876,7 @@
     "section": "ברכות",
     "chapter": 2,
     "law": 12,
-    "highlight_contains": "",
+    "highlight_contains": "שכח ולא הזכיר בשבת או ביום טוב קדושת היום",
     "origin": "new-natural-paraphrase"
   },
   {
@@ -824,7 +886,7 @@
     "section": "שבת",
     "chapter": 29,
     "law": 5,
-    "highlight_contains": "",
+    "highlight_contains": "אסור לאדם לאכל או לשתות יין משקדש היום עד שיקדש",
     "origin": "new-natural-paraphrase"
   },
   {
@@ -834,7 +896,7 @@
     "section": "שבת",
     "chapter": 2,
     "law": 1,
-    "highlight_contains": "",
+    "highlight_contains": "ספק שהוא צריך לחלל עליו את השבת ספק שאינו צריך",
     "origin": "new-natural-paraphrase"
   },
   {
@@ -844,7 +906,7 @@
     "section": "שבת",
     "chapter": 3,
     "law": 1,
-    "highlight_contains": "",
+    "highlight_contains": "מתר להתחיל מלאכה מערב שבת אף על פי שהיא נגמרת מאליה בשבת",
     "origin": "new-natural-paraphrase"
   },
   {
@@ -854,7 +916,7 @@
     "section": "שופר וסוכה ולולב",
     "chapter": 4,
     "law": 1,
-    "highlight_contains": "",
+    "highlight_contains": "גבוהה מעשרים אמה כל שהוא הרי זו פסולה",
     "origin": "new-natural-paraphrase"
   },
   {
@@ -864,7 +926,7 @@
     "section": "שופר וסוכה ולולב",
     "chapter": 5,
     "law": 1,
-    "highlight_contains": "",
+    "highlight_contains": "אין מסככין אלא בדבר שגדולו מן הארץ",
     "origin": "new-natural-paraphrase"
   },
   {
@@ -874,7 +936,7 @@
     "section": "ברכות",
     "chapter": 4,
     "law": 1,
-    "highlight_contains": "",
+    "highlight_contains": "אכל כשהוא מהלך יושב במקום שפסק ויברך",
     "origin": "new-natural-paraphrase"
   },
   {
@@ -884,7 +946,7 @@
     "section": "תלמוד תורה",
     "chapter": 5,
     "law": 1,
-    "highlight_contains": "",
+    "highlight_contains": "חיב בכבוד רבו ויראתו יתר מאביו",
     "origin": "new-natural-paraphrase"
   },
   {
@@ -894,7 +956,7 @@
     "section": "תשובה",
     "chapter": 5,
     "law": 1,
-    "highlight_contains": "",
+    "highlight_contains": "רשות לכל אדם נתונה",
     "origin": "new-natural-paraphrase"
   },
   {
@@ -904,7 +966,7 @@
     "section": "גזילה ואבידה",
     "chapter": 2,
     "law": 1,
-    "highlight_contains": "",
+    "highlight_contains": "הרי זו חוזרת לבעליה בעצמה",
     "origin": "new-natural-paraphrase"
   },
   {
@@ -914,7 +976,7 @@
     "section": "דעות",
     "chapter": 6,
     "law": 1,
-    "highlight_contains": "",
+    "highlight_contains": "אחר רעיו וחבריו",
     "origin": "new-natural-paraphrase"
   },
   {
@@ -924,7 +986,7 @@
     "section": "עירובין",
     "chapter": 1,
     "law": 1,
-    "highlight_contains": "",
+    "highlight_contains": "כלן מתרין לטלטל בכל החצר ומבתים לחצר",
     "origin": "new-natural-paraphrase"
   },
   {
@@ -934,7 +996,7 @@
     "section": "מגילה וחנוכה",
     "chapter": 2,
     "law": 1,
-    "highlight_contains": "",
+    "highlight_contains": "הקורא את המגלה למפרע לא יצא",
     "origin": "new-natural-paraphrase"
   }
 ]
