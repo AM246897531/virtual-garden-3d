@@ -135,6 +135,8 @@ fun RambamApp(initialQuery: String = "", debugTypeahead: Boolean = false,
                         val timings = ArrayList<Long>()
                         var passed = 0
                         var highlighted = 0
+                        var goldAnchors = 0
+                        var verifiedAnchors = 0
                         for (index in 0 until cases.length()) {
                             val item = cases.getJSONObject(index)
                             val question = item.getString("question")
@@ -150,27 +152,35 @@ fun RambamApp(initialQuery: String = "", debugTypeahead: Boolean = false,
                             if (accurate) passed++
                             val passage = if (top != null) engine.relevantPassage(top, question) else null
                             val required = item.optString("highlight_contains", "")
-                            val passageValid = passage != null && top != null &&
-                                passage.end > passage.start && (required.isBlank() ||
-                                    HebrewSearch.normalize(top.text.substring(passage.start, passage.end))
-                                        .contains(HebrewSearch.normalize(required)))
-                            // An in-bounds span on the wrong law is not a correct highlight.
+                            val boundsValid = passage != null && top != null &&
+                                passage.start >= 0 && passage.end <= top.text.length &&
+                                passage.end > passage.start
+                            val hasGoldAnchor = required.isNotBlank()
+                            if (hasGoldAnchor) goldAnchors++
+                            val anchorValid = boundsValid && hasGoldAnchor &&
+                                HebrewSearch.normalize(top!!.text.substring(passage!!.start, passage.end))
+                                    .contains(HebrewSearch.normalize(required))
+                            // Legacy measure: source correct + span in bounds. This is NOT
+                            // proof of semantically accurate highlighting without an anchor.
+                            val passageValid = boundsValid && (!hasGoldAnchor || anchorValid)
                             if (accurate && passageValid) highlighted++
-                            val excerpt = if (passage != null && top != null)
-                                top.text.substring(passage.start, passage.end)
+                            if (accurate && anchorValid) verifiedAnchors++
+                            val excerpt = if (boundsValid)
+                                top!!.text.substring(passage!!.start, passage.end)
                                     .replace('\n', ' ').take(130) else "none"
                             Log.i("RambamQuality", "${prefix}_CASE ${index + 1}/${cases.length()} " +
                                 "${if (accurate) "PASS" else "FAIL"} tier=${item.getInt("tier")} " +
                                 "top=${top?.reference ?: "none"} " +
                                 "expected=$section/$expectedChapter/$expectedLaw " +
-                                "passage=$passageValid elapsed_ms=${timings.last()} " +
+                                "passage=$passageValid anchor=$anchorValid elapsed_ms=${timings.last()} " +
                                 "excerpt=$excerpt")
                         }
                         val sorted = timings.sorted()
                         val median = sorted[sorted.size / 2]
                         val p95 = sorted[((sorted.size * .95).toInt()).coerceAtMost(sorted.lastIndex)]
                         Log.i("RambamQuality", "${prefix}_COMPLETE passed=$passed total=${cases.length()} " +
-                            "highlighted=$highlighted median_ms=$median p95_ms=$p95 " +
+                            "highlighted=$highlighted verifiedAnchors=$verifiedAnchors goldAnchors=$goldAnchors " +
+                            "median_ms=$median p95_ms=$p95 " +
                             "max_ms=${sorted.last()}")
                     }
                 } catch (error: Throwable) {
