@@ -113,6 +113,7 @@ class CorpusStore private constructor(
     // Source-finder ranking only. These associations prioritize retrieval,
     // NEVER assert equivalent halakhic rulings or generate legal answers.
     fun search(input: String, limit: Int = 50): List<Law> {
+        val startedAt = android.os.SystemClock.elapsedRealtime()
         val base = HebrewSearch.normalize(input)
         if (base.isBlank()) return emptyList()
         val words = base.split(" ").filter {
@@ -145,7 +146,12 @@ class CorpusStore private constructor(
                 // Keep a functioning lexical fallback if FTS is absent.
             }
         }
-        val semanticResults = semantic.nearest(input, 140)
+        val semanticResults = try {
+            semantic.nearest(input, 140)
+        } catch (error: Exception) {
+            android.util.Log.e("RambamSearch", "Semantic scoring failed; retaining exact FTS results", error)
+            emptyList()
+        }
         val semanticScores = semanticResults.toMap()
         val missingModelIds = semanticResults.map { it.first }.filter { it !in collected }.take(140)
         if (missingModelIds.isNotEmpty()) {
@@ -184,9 +190,18 @@ class CorpusStore private constructor(
             rank += ((semanticScores[law.id] ?: 0f) * 62f).toInt()
             return rank
         }
-        return collected.values
-            .sortedWith(compareByDescending<Law> { score(it) }.thenBy { it.id })
+        // Scoring in the sort comparator repeatedly normalized complete law text
+        // O(N log N) times, causing multi-word queries to appear empty for many
+        // seconds on emulators. Compute each expensive score ONCE instead.
+        val ranked = collected.values.map { law -> law to score(law) }
+            .sortedWith(compareByDescending<Pair<Law, Int>> { it.second }
+                .thenBy { it.first.id })
             .take(limit)
+            .map { it.first }
+        android.util.Log.i("RambamSearch",
+            "RESULT count=${ranked.size} terms=${words.size} elapsed_ms=" +
+                (android.os.SystemClock.elapsedRealtime() - startedAt))
+        return ranked
     }
 
 }

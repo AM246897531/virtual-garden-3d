@@ -59,6 +59,8 @@ fun RambamApp(initialQuery: String = "") {
     var loadingError by remember { mutableStateOf<String?>(null) }
     val bookmarks = remember { mutableStateListOf<Int>() }
     var results by remember { mutableStateOf<List<Law>>(emptyList()) }
+    var searching by remember { mutableStateOf(false) }
+    var searchError by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
         bookmarks.clear()
@@ -71,8 +73,22 @@ fun RambamApp(initialQuery: String = "") {
     }
     LaunchedEffect(store, query) {
         val s = store
-        results = if (s == null || query.isBlank()) emptyList()
-        else withContext(Dispatchers.IO) { s.search(query) }
+        searchError = null
+        if (s == null || query.isBlank()) {
+            searching = false
+            results = emptyList()
+        } else {
+            searching = true
+            results = emptyList()
+            try {
+                results = withContext(Dispatchers.IO) { s.search(query) }
+            } catch (ex: Exception) {
+                searchError = "אירעה שגיאה בחיפוש. אפשר לנסות שוב."
+                android.util.Log.e("RambamSearch", "Search query failed", ex)
+            } finally {
+                searching = false
+            }
+        }
     }
 
     fun saveBookmarks() {
@@ -162,7 +178,7 @@ fun RambamApp(initialQuery: String = "") {
                                     prefs.edit().putFloat("font", fontSize).apply()
                                 })
                         currentTab == "search" ->
-                            SearchPage(query, { query = it }, results, { showLaw(it) })
+                            SearchPage(query, { query = it }, results, searching, searchError, { showLaw(it) })
                         currentTab == "library" ->
                             LibraryPage(store!!, book, section, chapter,
                                 onBack = {
@@ -207,7 +223,8 @@ private fun PageHeading(title: String, subtitle: String) {
 
 @Composable
 private fun SearchPage(
-    query: String, onQueryChange: (String) -> Unit, results: List<Law>, onOpen: (Law) -> Unit
+    query: String, onQueryChange: (String) -> Unit, results: List<Law>,
+    searching: Boolean, searchError: String?, onOpen: (Law) -> Unit
 ) {
     Column(Modifier.fillMaxSize().padding(horizontal = 22.dp)) {
         Spacer(Modifier.height(34.dp))
@@ -250,7 +267,15 @@ private fun SearchPage(
             Text("תוצאות מתוך משנה תורה", fontWeight = FontWeight.Bold,
                 style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(12.dp))
-            if (results.isEmpty()) {
+            if (searching) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                    Spacer(Modifier.width(12.dp))
+                    Text("מאתר הלכות מתאימות...")
+                }
+            } else if (searchError != null) {
+                Text(searchError, color = MaterialTheme.colorScheme.error)
+            } else if (results.isEmpty()) {
                 Text("לא נמצאה התאמה. נסה ניסוח קצר יותר או מונחים מלשון הרמב״ם.",
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = .65f))
             }

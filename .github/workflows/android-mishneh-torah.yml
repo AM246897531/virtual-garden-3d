@@ -43,7 +43,7 @@ jobs:
         run: sudo chmod 666 /dev/kvm || true
       - name: Real Android emulator smoke test and screenshots
         uses: reactivecircus/android-emulator-runner@v2
-        continue-on-error: true
+        continue-on-error: false
         with:
           api-level: 35
           target: google_apis
