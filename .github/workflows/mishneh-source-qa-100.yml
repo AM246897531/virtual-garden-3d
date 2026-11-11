@@ -16,7 +16,7 @@ on:
 jobs:
   source-validation:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 120
     permissions:
       contents: read
     steps:
@@ -42,6 +42,18 @@ jobs:
         run: python scripts/validate_natural_100.py
       - name: Derive 100 exact answer-phrase locations in original UTF-16 texts
         run: python scripts/build_gold_answer_offsets.py
+      - name: Experimental Hebrew E5 model dependencies (explicit opt-in commit only)
+        if: contains(github.event.head_commit.message, '[run-e5]')
+        run: |
+          python -m pip install 'sentence-transformers>=3.4,<6' 'scikit-learn>=1.5,<2'
+      - name: Benchmark pretrained small Hebrew E5 against 100 labeled sources (NO APK)
+        if: contains(github.event.head_commit.message, '[run-e5]')
+        continue-on-error: true
+        env:
+          HEBREW_EMBED_MODEL: alphaedge-ai/multilingual-e5-small-heb-32768
+          TOKENIZERS_PARALLELISM: 'false'
+          OMP_NUM_THREADS: '4'
+        run: python scripts/experiment_tiny_hebrew_e5_100.py
       - name: Upload source-only QA evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -52,5 +64,6 @@ jobs:
             artifacts/corpus_report.json
             artifacts/char3_report.json
             artifacts/gold_answer_offsets_100.json
+            artifacts/experimental_e5_100.json
           retention-days: 30
           if-no-files-found: warn
