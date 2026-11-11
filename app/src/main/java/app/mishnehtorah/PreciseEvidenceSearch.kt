@@ -186,17 +186,49 @@ internal class PreciseEvidenceSearch(
      * not merely mention another number somewhere in the same law. */
     private fun quantityEvidence(analysis: SearchLanguage.Analysis, words: List<String>): Float {
         if (analysis.intent!=SearchLanguage.Intent.HOW_MANY) return 0f
-        val numbers=setOf("אחד","אחת","שני","שנימ","שתימ","שלוש","שלשה", "שלושת", "ארבע",
-            "חמש","שש","שבע","שמונה","תשע","עשר","עשרימ","שלשימ")
-        val positions=words.indices.filter { words[it] in numbers }
+        val numbers=setOf("אחד","אחת","שני","שנימ","שתימ","שלוש","שלשה","שלושת",
+            "ארבע","חמש","שש","שבע","שמונה","תשע","עשר","עשרימ","שלשימ",
+            "פעמימ","שתי","שתיי","מאות","אלפימ")
+        val positions=words.indices.filter { words[it] in numbers ||
+            (words[it].matches(Regex("[0-9]+"))) }
         if (positions.isEmpty()) return 0f
-        // The noun following a quantity question determines what is counted.
-        val concept=analysis.terms.firstOrNull { it.word!="כמה" && it.word!="מספר" && it.word!="מנינ" }
+        // A numeral unrelated to the concept being counted is weak evidence:
+        // 'two blessings' must not beat 'twice saying Shema'.
+        val concepts=analysis.terms.filter { it.word !in setOf("כמה", "מספר", "מנינ", "שיעור") }
         for (idx in positions) {
-            val near=words.subList(maxOf(0,idx-3),minOf(words.size,idx+4))
-            if (concept!=null && concept.word.length>=4 && termMatch(concept,near)>=.84f) return 22f
+            val near=words.subList(maxOf(0,idx-4),minOf(words.size,idx+5))
+            if (concepts.any { it.word.length>=4 && termMatch(it,near)>=.84f })
+                return 22f
         }
-        return 3f
+        return 1f
+    }
+
+    /** Reward independent query concepts present in the SAME short evidence span.
+     * A paragraph with scattered vocabulary is not necessarily an answer. */
+    private fun proximityEvidence(analysis: SearchLanguage.Analysis, words: List<String>): Float {
+        if (analysis.terms.size < 2 || words.size < 3) return 0f
+        val found = ArrayList<IntArray>()
+        for (term in analysis.terms) {
+            val locations = ArrayList<Int>()
+            for (i in words.indices) {
+                if (term.alternatives.any { alt -> SearchLanguage.matches(alt, words[i]) >= .80f }) {
+                    locations.add(i)
+                    if (locations.size >= 25) break
+                }
+            }
+            if (locations.isNotEmpty()) found.add(locations.toIntArray())
+        }
+        if (found.size < 2) return 0f
+        var best = 0
+        val length = words.size
+        for (from in 0 until length) {
+            val to = minOf(length, from + 13)
+            val count = found.count { indices -> indices.any { it >= from && it < to } }
+            if (count > best) best = count
+            if (best == found.size) break
+        }
+        val ratio = best.toFloat()/analysis.terms.size
+        return if (best >= 2) 13f*ratio*ratio else 0f
     }
 
     private data class Evidence(val score: Float, val matched: Int, val coverage: Float)
@@ -225,7 +257,7 @@ internal class PreciseEvidenceSearch(
         // A question asking whether something is permitted needs an explicit
         // normative ruling, not merely a narrative with overlapping vocabulary.
         val asksPermission=analysis.normalized.contains("מותר") || analysis.normalized.contains("אסור")
-        val permissionEvidence=if (asksPermission && Regex("אסור|מותר|מתר").containsMatchIn(passage)) 20f else 0f
+        val permissionEvidence=if (asksPermission && Regex("אסור|מותר|מתר|פטור").containsMatchIn(passage)) 13f else 0f
         // A direct, nearby statement of the queried concepts is generally
         // stronger evidence than scattered mentions throughout a long law.
         val lead = words.take(15)
@@ -238,7 +270,8 @@ internal class PreciseEvidenceSearch(
         val leadScore = if (total > 0f) 20f * (leadCovered / total) else 0f
         val score=coverage*110f+matched*2.5f+minOf(7f,directPhrases*3f)+permissionEvidence+
             SearchLanguage.intentBoost(analysis.intent,passage)*.85f+quantityEvidence(analysis,words)+
-            secCoverage*6f+max(0f,semanticScore)*12f+leadScore-shortness
+            secCoverage*6f+max(0f,semanticScore)*12f+leadScore+
+            proximityEvidence(analysis, words)-shortness
         return Evidence(score,matched,coverage)
     }
 
