@@ -215,9 +215,11 @@ internal object SearchLanguage {
                     }
                 }
             }
-            val alternatives=(synonyms[lexicalKey].orEmpty()+word+lexicalKey)
+            // The literal user word must be the FIRST retrieval option;
+            // wide synonym lists used to truncate it out of FTS candidate search.
+            val alternatives=(listOf(word,lexicalKey)+synonyms[lexicalKey].orEmpty())
                 .map { HebrewSearch.normalize(it) }.filter { it.length>=3 && !it.contains(' ') }
-                .distinct().take(8)
+                .distinct().take(10)
             val stem=stem(word)
             if (!seen.add(stem)) continue
             val intentWord = word in intentTime || word in intentWhere || word in intentCount || word in intentRequire

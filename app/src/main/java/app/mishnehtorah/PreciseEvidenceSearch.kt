@@ -73,7 +73,7 @@ internal class PreciseEvidenceSearch(
 
     private fun groupQuery(term: SearchLanguage.Term): String = term.alternatives
         .filter { it.length>=3 && it.length<=30 }
-        .distinct().take(5).joinToString(" OR ") { "$it*" }
+        .distinct().take(6).joinToString(" OR ") { "$it*" }
         .let { if (it.contains(" OR ")) "($it)" else it }
 
     private fun candidateIds(analysis: SearchLanguage.Analysis): LinkedHashSet<Int> {
@@ -181,9 +181,12 @@ internal class PreciseEvidenceSearch(
 
     private fun termMatch(group: SearchLanguage.Term, tokens: List<String>): Float {
         var strongest=0f
-        for (w in group.alternatives) {
+        for ((index, w) in group.alternatives.withIndex()) {
+            val aliasPenalty = if (index==0) 1f else .88f
             for (candidate in tokens) {
-                val score=SearchLanguage.matches(w,candidate)
+                // Synonyms are useful recall signals, but must not be weighted
+                // identically to literal question words (especially polysemes).
+                val score=SearchLanguage.matches(w,candidate)*aliasPenalty
                 if (score>strongest) strongest=score
                 if (strongest==1f) return 1f
             }
