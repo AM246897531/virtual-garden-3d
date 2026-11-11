@@ -161,12 +161,31 @@ class CorpusStore private constructor(
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, PassageMatch?>?) =
             size > 180
     }
+    // Candidate offsets are cheap to keep. Expensive answer-span refinement
+    // is deferred until a visible card or reader actually needs it.
+    private val pendingHighlightHints =
+        object : LinkedHashMap<String, PreciseEvidenceSearch.Hit>(180, .75f, true) {
+            override fun removeEldestEntry(
+                eldest: MutableMap.MutableEntry<String, PreciseEvidenceSearch.Hit>?
+            ) = size > 180
+        }
 
     internal fun relevantPassage(law: Law, question: String): PassageMatch? {
         if (question.isBlank()) return null
         val key = "${law.id}:$question"
-        synchronized(highlightCache) {
+        val pending=synchronized(highlightCache) {
             if (highlightCache.containsKey(key)) return highlightCache[key]
+            pendingHighlightHints[key]
+        }
+        if (pending!=null) {
+            val focus=preciseSearch.refine(law.text,
+                SearchLanguage.focusedEvidenceQuery(question),
+                pending.start,pending.end,pending.confidence)
+            synchronized(highlightCache) {
+                highlightCache[key]=focus
+                pendingHighlightHints.remove(key)
+            }
+            return focus
         }
         // When a law was opened outside search, run content-only matching with
         // the original passage finder; never use a predetermined source hint.
@@ -190,10 +209,24 @@ class CorpusStore private constructor(
         }
         val lawById = indexedLaws(hits.map { it.lawId }).associateBy { it.law.id }
         val output = ArrayList<Law>(hits.size)
-        for (hit in hits) {
+        for ((rank,hit) in hits.withIndex()) {
             val law = lawById[hit.lawId]?.law ?: continue
-            val focus = preciseSearch.refine(law.text,evidenceQuestion,hit.start,hit.end,hit.confidence)
-            synchronized(highlightCache) { highlightCache["${law.id}:$input"] = focus }
+            val key="${law.id}:$input"
+            if (rank==0) {
+                // One ready-to-read highlighted result without an expensive
+                // synchronous refinement pass over every offscreen card.
+                val focus=preciseSearch.refine(law.text,evidenceQuestion,
+                    hit.start,hit.end,hit.confidence)
+                synchronized(highlightCache) {
+                    highlightCache[key]=focus
+                    pendingHighlightHints.remove(key)
+                }
+            } else {
+                synchronized(highlightCache) {
+                    highlightCache.remove(key)
+                    pendingHighlightHints[key]=hit
+                }
+            }
             output.add(law)
         }
         Log.i("RambamSearch", "RESULT count=${output.size} model_candidates=240 " +
