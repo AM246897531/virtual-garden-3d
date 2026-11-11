@@ -27,3 +27,12 @@ The edition used for each law is also stored in the database edition column.
 
 IMPORTANT: Corpus completeness is reported in corpus_report.json. A missing
 halakhah must never be invented or concealed.
+
+## In-app semantic search index
+
+The `hebrew_semantic.bin` model is trained from the licensed Mishneh Torah
+passages included in the same build. It includes source-derived vector
+representations. The text sources, their edition identifiers and their
+applicable Public Domain or CC-BY-SA licenses remain attributed above and in
+`SOURCE_MANIFEST.json`. Redistribution must respect the relevant source terms.
+No separate third-party pretrained model is incorporated.
