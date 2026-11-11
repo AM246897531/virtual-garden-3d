@@ -1,0 +1,36 @@
+name: Verify 100 free-form gold sources (PYTHON ONLY - NO APK BUILD)
+on:
+  push:
+    branches: [feature/mishneh-torah-search-100qa]
+    paths:
+      - scripts/quality_natural_100.json
+      - scripts/validate_natural_100.py
+      - .github/workflows/mishneh-source-qa-100.yml
+  workflow_dispatch:
+jobs:
+  source-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install text corpus fetch dependency
+        run: python -m pip install requests==2.32.3
+      - name: Rebuild original Mishneh Torah corpus - no Gradle or Android compilation
+        run: python scripts/build_corpus.py
+      - name: Validate 100 question references and verbatim answer-anchor text
+        run: python scripts/validate_natural_100.py
+      - name: Upload source-only QA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mishneh-Torah-Gold-100-Python-Only
+          path: |
+            artifacts/natural_100_gold_validation.json
+            artifacts/corpus_report.json
+          retention-days: 30
+          if-no-files-found: warn
