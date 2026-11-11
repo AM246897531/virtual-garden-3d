@@ -476,13 +476,17 @@ internal class PreciseEvidenceSearch(
     }
 
     fun search(query: String, limit: Int = 22): List<Hit> {
-        val analysis=SearchLanguage.analyze(query)
+        // Rank the authentic law against the substantive clauses of a
+        // conversational question. Keep the original question unchanged
+        // for recall, provenance and user-visible results.
+        val focused=SearchLanguage.focusedEvidenceQuery(query)
+        val analysis=SearchLanguage.analyze(focused)
         if (analysis.terms.isEmpty()) return emptyList()
         val started=android.os.SystemClock.elapsedRealtime()
         val weights=FloatArray(analysis.terms.size) { weight(analysis.terms[it]) }
         val aliases=proximityAliases(analysis)
         val tokenMatchCache=HashMap<String,FloatArray>(8192)
-        val nearest=semantic.nearest(query,240)
+        val nearest=semantic.nearest(focused,240)
         val semanticScores=nearest.toMap()
         // Orthogonal source-only character candidate route. This returns
         // literal document similarities, never a fabricated answer.
@@ -600,6 +604,7 @@ internal class PreciseEvidenceSearch(
         Log.i("RambamSearch", "PRECISION_SEARCH lexical_passages=$lexicalCount " +
             "semantic_laws=${nearest.size} char_laws=${characterNearest.size} " +
             "bridged_laws=${bridgeLawIds.size} segment_laws=${segmentNearest.size} " +
+            "focused=${focused!=query} " +
             "rescored=${passages.size} " +
             "supported_laws=${accepted.size} returned=${sorted.size} " +
             "top=${sorted.firstOrNull()?.lawId ?: -1} " +
