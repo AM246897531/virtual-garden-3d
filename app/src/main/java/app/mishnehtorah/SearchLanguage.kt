@@ -380,6 +380,34 @@ internal object SearchLanguage {
         return output.distinct()
     }
 
+    /**
+     * Protect real content from long conversational introductions, suffixes,
+     * and multiple subquestions. Segments are only extra candidate-retrieval
+     * routes. The complete question still governs the final answer ranking.
+     */
+    fun evidenceSegments(question: String): List<String> {
+        if (question.length<75) return emptyList()
+        val chunks=Regex("[.!?;׃\\n]+").split(question)
+            .map { it.trim() }.filter { it.length>=16 && it.length<=950 }
+        if (chunks.size<2) return emptyList()
+        val scored=chunks.mapIndexed { i, chunk ->
+            val n=HebrewSearch.normalize(chunk)
+            val words=n.split(' ').filter { it.length>=3 && it !in stop }
+            val meaningful=words.count { it.length>=4 }
+            val isQuestion=chunk.contains("?") || n.startsWith("מה ") ||
+                n.startsWith("מתי ") || n.startsWith("האם ") ||
+                n.startsWith("באיזה ") || n.contains(" שכחתי ")
+            val boilerplate=if (listOf("אני מבקש למצוא","אני מנסה להבין",
+                "המקור הנכון","ההלכה המדויקת","משנה תורה לרמב").any {
+                    n.contains(HebrewSearch.normalize(it))
+                }) 12 else 0
+            Triple(i,chunk,meaningful+(if (isQuestion) 6 else 0)-boilerplate)
+        }
+        return scored.sortedWith(compareByDescending<Triple<Int,String,Int>> { it.third }
+            .thenBy { it.first }).take(3).filter { it.third>0 }
+            .map { it.second }.distinct().filter { it!=question.trim() }
+    }
+
     private val affixes = charArrayOf('ב','כ','ל','מ','ו','ה','ש')
     /** Conservative morphology: no arbitrary 3-letter root conflation. */
     fun stem(s: String): String {
