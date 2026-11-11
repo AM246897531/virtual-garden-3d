@@ -447,10 +447,23 @@ internal class PreciseEvidenceSearch(
         // literal document similarities, never a fabricated answer.
         val characterNearest=characterIndex?.nearest(query,240).orEmpty()
         val characterScores=characterNearest.toMap()
+        // Topic-vocabulary expansions are an independent recall route,
+        // never a replacement for the user's original question.
+        val bridgeQueries=SearchLanguage.sourceVocabularyBridges(query)
+        val bridgeNearest=bridgeQueries.flatMap { bridge ->
+            characterIndex?.nearest(bridge,240).orEmpty()
+        }
+        val bridgeLawIds=bridgeNearest.map { it.first }.toHashSet()
+        val bridgeAnalyses=bridgeQueries.map { queryText ->
+            val a=SearchLanguage.analyze(queryText)
+            Triple(a,FloatArray(a.terms.size) { weight(a.terms[it]) },
+                proximityAliases(a))
+        }
         val ids=candidateIds(analysis)
         val lexicalCount=ids.size
         addSemanticPassages(nearest,ids)
         addSemanticPassages(characterNearest,ids)
+        addSemanticPassages(bridgeNearest,ids)
         val passages=loadPassages(ids)
         if (passages.isEmpty()) return emptyList()
         val lawSections=HashMap<Int,String>()
@@ -482,13 +495,31 @@ internal class PreciseEvidenceSearch(
         val groupCount=analysis.terms.size
         for (passage in passages) {
             val sec=lawSections[passage.lawId].orEmpty()
-            val score=evidence(analysis,weights,passage.norm,
+            var score=evidence(analysis,weights,passage.norm,
                 HebrewSearch.normalize(sec), semanticScores[passage.lawId]?:0f,
                 aliases)
             val needed=if (groupCount==1) 1 else 2
             // Penalize partial subject matches. For hard multi-concept queries
             // a passage that lacks the specific condition is not reliable.
-            if (score.matched<needed || score.coverage<(if (groupCount<3) .40f else .38f)) continue
+            val directSupported=score.matched>=needed &&
+                score.coverage>=(if (groupCount<3) .40f else .38f)
+            var bridgeSupported=false
+            if (!directSupported && passage.lawId in bridgeLawIds) {
+                // The expansion helps only if actual words in THIS source
+                // independently support at least two expanded concepts.
+                // Topic dictionaries contain no fixed destination/source ID.
+                for ((expansion,expandedWeights,expandedAliases) in bridgeAnalyses) {
+                    if (expansion.terms.size<2) continue
+                    val expanded=evidence(expansion,expandedWeights,passage.norm,
+                        HebrewSearch.normalize(sec),0f,expandedAliases)
+                    if (expanded.matched>=2 && expanded.coverage>=.45f) {
+                        bridgeSupported=true
+                        if (expanded.score*.90f>score.score)
+                            score=expanded.copy(score=expanded.score*.90f)
+                    }
+                }
+            }
+            if (!directSupported && !bridgeSupported) continue
             val sectionBonus=sectionBoostCache.getOrPut(sec) {
                 (affinities[sec]?:0f)*40f+sectionTitleBoost(sec,analysis)
             }
@@ -518,7 +549,8 @@ internal class PreciseEvidenceSearch(
             .thenByDescending { it.coverage }.thenBy { it.lawId })
             .take(limit).toList()
         Log.i("RambamSearch", "PRECISION_SEARCH lexical_passages=$lexicalCount " +
-            "semantic_laws=${nearest.size} char_laws=${characterNearest.size} rescored=${passages.size} " +
+            "semantic_laws=${nearest.size} char_laws=${characterNearest.size} " +
+            "bridged_laws=${bridgeLawIds.size} rescored=${passages.size} " +
             "supported_laws=${accepted.size} returned=${sorted.size} " +
             "top=${sorted.firstOrNull()?.lawId ?: -1} " +
             "elapsed_ms=${android.os.SystemClock.elapsedRealtime()-started}")
