@@ -21,6 +21,10 @@ jobs:
         run: python scripts/test_corpus_utils.py
       - name: Download and verify FULL public-domain Hebrew corpus; prebuild FTS index
         run: python scripts/build_corpus.py
+      - name: Build passage-level evidence index for precise matching and highlighting
+        run: python scripts/build_passage_index.py
+      - name: Verify precise source offsets and passage index integrity
+        run: python scripts/test_passage_index.py
       - name: Train and package tiny 100-percent-offline Hebrew embedding model
         run: python scripts/build_semantic_index.py
       - name: Verify local learned model and search results

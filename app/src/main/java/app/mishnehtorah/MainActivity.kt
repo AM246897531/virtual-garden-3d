@@ -41,7 +41,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-// The brand palette is shared by every screen; retrieval engine is unchanged.
+// The brand palette is shared by every screen; the retrieval engine is unchanged.
 private val Paper = Color(0xFFFFFFFF)
 private val Cream = Color(0xFFF4E9D5)
 private val Ink = Color(0xFF252420)
@@ -120,47 +120,54 @@ fun RambamApp(initialQuery: String = "", debugTypeahead: Boolean = false, debugQ
         if (debugQuality && engine != null) {
             withContext(Dispatchers.IO) {
                 try {
-                    val raw = context.assets.open("quality_50.json").bufferedReader().use { it.readText() }
-                    val cases = JSONArray(raw)
-                    val timings = ArrayList<Long>()
-                    var passed = 0
-                    var highlighted = 0
-                    for (index in 0 until cases.length()) {
-                        val item = cases.getJSONObject(index)
-                        val question = item.getString("question")
-                        val section = "הלכות " + item.getString("section")
-                        val expectedChapter = item.getInt("chapter")
-                        val expectedLaw = item.getInt("law")
-                        val begin = android.os.SystemClock.elapsedRealtime()
-                        val answers = engine.search(question)
-                        timings.add(android.os.SystemClock.elapsedRealtime() - begin)
-                        val top = answers.firstOrNull()
-                        val accurate = top != null && top.section.endsWith(section) &&
-                            top.chapter == expectedChapter && top.number == expectedLaw
-                        if (accurate) passed++
-                        val passage = if (top != null) engine.relevantPassage(top, question) else null
-                        val required = item.optString("highlight_contains", "")
-                        val passageValid = passage != null && top != null &&
-                            passage.end > passage.start && (required.isBlank() ||
-                                HebrewSearch.normalize(top.text.substring(passage.start, passage.end))
-                                    .contains(HebrewSearch.normalize(required)))
-                        if (passageValid) highlighted++
-                        val excerpt = if (passage != null && top != null)
-                            top.text.substring(passage.start, passage.end)
-                                .replace('\n', ' ').take(130) else "none"
-                        Log.i("RambamQuality", "Q50_CASE ${index + 1}/${cases.length()} " +
-                            "${if (accurate) "PASS" else "FAIL"} tier=${item.getInt("tier")} " +
-                            "top=${top?.reference ?: "none"} " +
-                            "expected=$section/$expectedChapter/$expectedLaw " +
-                            "passage=$passageValid elapsed_ms=${timings.last()} " +
-                            "excerpt=$excerpt")
+                    // Two distinct regression sets: the old curated questions
+                    // AND an unseen cross-section set. Report exact Top-1 accuracy;
+                    // never silently count semantic proximity as a correct source.
+                    for ((asset, prefix) in listOf(
+                        "quality_50.json" to "Q50", "quality_unseen_30.json" to "Q30"
+                    )) {
+                        val raw = context.assets.open(asset).bufferedReader().use { it.readText() }
+                        val cases = JSONArray(raw)
+                        val timings = ArrayList<Long>()
+                        var passed = 0
+                        var highlighted = 0
+                        for (index in 0 until cases.length()) {
+                            val item = cases.getJSONObject(index)
+                            val question = item.getString("question")
+                            val section = "הלכות " + item.getString("section")
+                            val expectedChapter = item.getInt("chapter")
+                            val expectedLaw = item.getInt("law")
+                            val begin = android.os.SystemClock.elapsedRealtime()
+                            val answers = engine.search(question)
+                            timings.add(android.os.SystemClock.elapsedRealtime() - begin)
+                            val top = answers.firstOrNull()
+                            val accurate = top != null && top.section.endsWith(section) &&
+                                top.chapter == expectedChapter && top.number == expectedLaw
+                            if (accurate) passed++
+                            val passage = if (top != null) engine.relevantPassage(top, question) else null
+                            val required = item.optString("highlight_contains", "")
+                            val passageValid = passage != null && top != null &&
+                                passage.end > passage.start && (required.isBlank() ||
+                                    HebrewSearch.normalize(top.text.substring(passage.start, passage.end))
+                                        .contains(HebrewSearch.normalize(required)))
+                            if (passageValid) highlighted++
+                            val excerpt = if (passage != null && top != null)
+                                top.text.substring(passage.start, passage.end)
+                                    .replace('\n', ' ').take(130) else "none"
+                            Log.i("RambamQuality", "${prefix}_CASE ${index + 1}/${cases.length()} " +
+                                "${if (accurate) "PASS" else "FAIL"} tier=${item.getInt("tier")} " +
+                                "top=${top?.reference ?: "none"} " +
+                                "expected=$section/$expectedChapter/$expectedLaw " +
+                                "passage=$passageValid elapsed_ms=${timings.last()} " +
+                                "excerpt=$excerpt")
+                        }
+                        val sorted = timings.sorted()
+                        val median = sorted[sorted.size / 2]
+                        val p95 = sorted[((sorted.size * .95).toInt()).coerceAtMost(sorted.lastIndex)]
+                        Log.i("RambamQuality", "${prefix}_COMPLETE passed=$passed total=${cases.length()} " +
+                            "highlighted=$highlighted median_ms=$median p95_ms=$p95 " +
+                            "max_ms=${sorted.last()}")
                     }
-                    val sorted = timings.sorted()
-                    val median = sorted[sorted.size / 2]
-                    val p95 = sorted[((sorted.size * .95).toInt()).coerceAtMost(sorted.lastIndex)]
-                    Log.i("RambamQuality", "Q50_COMPLETE passed=$passed total=${cases.length()} " +
-                        "highlighted=$highlighted median_ms=$median p95_ms=$p95 " +
-                        "max_ms=${sorted.last()}")
                 } catch (error: Throwable) {
                     Log.e("RambamQuality", "Q50_FAILED_TO_RUN", error)
                 }

@@ -62,7 +62,7 @@ class CorpusStore private constructor(
             // Previous builds shipped a differently-versioned database with the
             // same app ID. Migrate once on upgrade instead of silently reusing it.
             val prefs = context.getSharedPreferences("corpus_install", Context.MODE_PRIVATE)
-            val corpusEpoch = 3
+            val corpusEpoch = 4
             if (!destination.exists() || destination.length() == 0L ||
                 prefs.getInt("corpus_epoch", 0) != corpusEpoch) {
                 val temporary = File(context.filesDir, "rambam.sqlite.part")
@@ -153,9 +153,10 @@ class CorpusStore private constructor(
         return output
     }
 
-    private val highlightCache = object : LinkedHashMap<String, PassageMatch?>(96, .75f, true) {
+    private val preciseSearch = PreciseEvidenceSearch(db, semantic)
+    private val highlightCache = object : LinkedHashMap<String, PassageMatch?>(180, .75f, true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, PassageMatch?>?) =
-            size > 96
+            size > 180
     }
 
     internal fun relevantPassage(law: Law, question: String): PassageMatch? {
@@ -164,107 +165,32 @@ class CorpusStore private constructor(
         synchronized(highlightCache) {
             if (highlightCache.containsKey(key)) return highlightCache[key]
         }
-        val hint = SmartQueryHints.forQuestion(question)
-        val focus = if (hint != null && law.section.endsWith(hint.sectionName) &&
-            law.chapter == hint.chapter && law.number == hint.halakhah) hint.focus else ""
-        val passage = RelevantPassage.find(law.text, question, focus, semantic)
+        // When a law was opened outside search, run content-only matching with
+        // the original passage finder; never use a predetermined source hint.
+        val passage = RelevantPassage.find(law.text, question, "", semantic)
         synchronized(highlightCache) { highlightCache[key] = passage }
         return passage
     }
 
-    /**
-     * All results are verbatim laws from the local corpus. No answer synthesis.
-     * FTS is first used as a *cheap candidate ID source*, then the expensive
-     * law body is loaded only ONCE per unique candidate, instead of repeatedly
-     * materializing 250 full texts per FTS query.
-     */
-    fun search(input: String, limit: Int = 50): List<Law> {
-        val startedAt = android.os.SystemClock.elapsedRealtime()
-        val expanded = input.replace("ר״ח", "ראש חודש")
-            .replace("ר\"ח", "ראש חודש").replace("ר'ח", "ראש חודש")
-        val base = HebrewSearch.normalize(expanded)
-        if (base.isBlank()) return emptyList()
-        val words = base.split(' ').filter {
-            it.length >= 2 && !searchStopWords.contains(it)
-        }.distinct().take(12)
-        if (words.isEmpty()) return emptyList()
-        val hint = SmartQueryHints.forQuestion(expanded)
-        val variants = HebrewSearch.alternatives(expanded).drop(1)
-            .map { HebrewSearch.normalize(it) }.filter { it.isNotBlank() }.distinct()
-        val ids = LinkedHashSet<Int>(880)
-        if (hint != null) {
-            db.rawQuery("SELECT id FROM laws WHERE section LIKE ? " +
-                "AND chapter=? AND halakhah=? LIMIT 1",
-                arrayOf("%" + hint.sectionName, hint.chapter.toString(),
-                    hint.halakhah.toString())).use { c ->
-                if (c.moveToFirst()) ids.add(c.getInt(0))
-            }
+    /** Search actual passages, then open the corresponding *verbatim* law. */
+    fun search(input: String, limit: Int = 22): List<Law> {
+        if (input.isBlank()) return emptyList()
+        val hits = preciseSearch.search(input, limit)
+        if (hits.isEmpty()) {
+            Log.i("RambamSearch", "RESULT count=0 model_candidates=240 top=none")
+            return emptyList()
         }
-        val queries = LinkedHashSet<String>()
-        // At most a handful of index searches, rather than up to 24 costly
-        // law-row reads. Prefixing is safe because input was normalized.
-        if (words.isNotEmpty()) {
-            queries.add(words.take(5).joinToString(" AND ") { "$it*" })
-            queries.add(words.take(4).joinToString(" OR ") { "$it*" })
+        val lawById = indexedLaws(hits.map { it.lawId }).associateBy { it.law.id }
+        val output = ArrayList<Law>(hits.size)
+        for (hit in hits) {
+            val law = lawById[hit.lawId]?.law ?: continue
+            val focus = preciseSearch.refine(law.text,input,hit.start,hit.end,hit.confidence)
+            synchronized(highlightCache) { highlightCache["${law.id}:$input"] = focus }
+            output.add(law)
         }
-        if ("יעלה" in base) queries.add("יעלה* AND ויבא*")
-        if ("ראש חודש" in base || "ראש חדש" in base) queries.add("ראשי* AND חדש*")
-        for (phrase in variants.take(3)) {
-            val tokens = phrase.split(' ').filter { it.length >= 3 }.take(4)
-            if (tokens.isNotEmpty()) queries.add(tokens.joinToString(" AND ") { "$it*" })
-        }
-        for (ftsQuery in queries.take(7)) {
-            try {
-                db.rawQuery("SELECT rowid FROM laws_fts WHERE laws_fts MATCH ? LIMIT 280",
-                    arrayOf(ftsQuery)).use { c ->
-                    while (c.moveToNext()) ids.add(c.getInt(0))
-                }
-            } catch (ex: android.database.sqlite.SQLiteException) {
-                android.util.Log.w("RambamSearch", "FTS candidate query skipped", ex)
-            }
-            if (ids.size >= 760) break
-        }
-        val model = semantic.nearest(expanded, 140)
-        val modelScores = model.toMap()
-        for ((id, _) in model) ids.add(id)
-        if (ids.isEmpty()) {
-            db.rawQuery("SELECT id FROM laws WHERE norm LIKE ? LIMIT 200",
-                arrayOf("%" + words.first() + "%")).use { c ->
-                while (c.moveToNext()) ids.add(c.getInt(0))
-            }
-        }
-        val candidates = indexedLaws(ids)
-        fun relevance(it: IndexedLaw): Int {
-            val law = it.law
-            val content = it.normalizedBody
-            val section = HebrewSearch.normalize(law.section)
-            var rank = 0
-            for (word in words) {
-                if (content.contains(word)) rank += 7 + word.length / 2
-                if (section.contains(word)) rank += 17
-            }
-            for (phrase in variants) {
-                if (content.contains(phrase)) rank += 13
-            }
-            if (content.contains(base)) rank += 50
-            if (("מזונ" in base || "ברכת" in base) && "ברכות" in section) rank += 40
-            if (("תפילה" in base || "תפל" in base) && "תפילה" in section) rank += 34
-            if (hint != null && law.section.endsWith(hint.sectionName)) {
-                rank += 80
-                if (law.chapter == hint.chapter && law.number == hint.halakhah) {
-                    rank += 1400 // High-precision topic intent; original law is mandatory.
-                }
-            }
-            rank += ((modelScores[law.id] ?: 0f) * 75f).toInt()
-            return rank
-        }
-        val ranked = candidates.asSequence().map { it.law to relevance(it) }
-            .sortedWith(compareByDescending<Pair<Law, Int>> { it.second }
-                .thenBy { it.first.id }).take(limit).map { it.first }.toList()
-        Log.i("RambamSearch", "RESULT count=${ranked.size} " +
-            "model_candidates=${model.size} hint=${hint?.reason ?: "none"} " +
-            "terms=${words.size} top=${ranked.firstOrNull()?.reference ?: "none"} " +
-            "elapsed_ms=${android.os.SystemClock.elapsedRealtime() - startedAt}")
-        return ranked
+        Log.i("RambamSearch", "RESULT count=${output.size} model_candidates=240 " +
+            "top=${output.firstOrNull()?.reference ?: "none"} " +
+            "confidence=${hits.firstOrNull()?.confidence ?: 0f}")
+        return output
     }
 }
