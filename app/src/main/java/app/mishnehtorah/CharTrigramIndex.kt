@@ -1,6 +1,7 @@
 package app.mishnehtorah
 
 import android.content.Context
+import android.database.sqlite.SQLiteDatabase
 import android.util.Log
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -82,6 +83,23 @@ internal class CharTrigramIndex private constructor(
                 Log.w("RambamSearch", "Char trigram index unavailable; lexical fallback", error)
                 null
             }
+        }
+    }
+
+    /**
+     * Verify that the optional retrieval model indexes precisely the law IDs
+     * in the installed SQLite corpus, rather than trusting an old asset left
+     * from a different app build. A mismatch DISABLES this route.
+     * This check is read-only and runs once while the engine initializes.
+     */
+    fun matchesCorpus(database: SQLiteDatabase): Boolean {
+        database.rawQuery("SELECT id FROM laws ORDER BY id",null).use { cursor ->
+            var i=0
+            while (cursor.moveToNext()) {
+                if (i>=docIds.size || cursor.getInt(0)!=docIds[i]) return false
+                i++
+            }
+            return i==docIds.size
         }
     }
 
