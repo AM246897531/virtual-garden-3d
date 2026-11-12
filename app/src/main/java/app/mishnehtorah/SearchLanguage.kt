@@ -258,11 +258,17 @@ internal object SearchLanguage {
             Regex("נגמר|הסתימ|חלפ|עבר|איחר|פספס|החמצ|לא הספק|מאוחר מדי").containsMatchIn(normalized)
         // Negation is a logical condition, not just another common two-
         // letter lexical word. Preserve it separately from stopword removal.
-        val hasNegation=Regex("(^| )(לא|בלי|ללא|אינו|אינה|אינני|שלא|אין|אינן)( |$)")
-            .containsMatchIn(normalized)
+        // HebrewSearch.normalize converts final consonants, including
+        // אם -> אמ and אין -> אינ. Every comparison MUST run through the
+        // same normalizer, or real conditional/negative questions are lost.
+        val negationWords=setOf("לא","בלי","ללא","אינו","אינה",
+            "אינני","שלא","אין","אינן")
+            .map { HebrewSearch.normalize(it) }.toSet()
+        val hasNegation=all.any { it in negationWords }
         val specificConditionWords=setOf("אם","כאשר","אפילו","למרות",
             "במקרה","מקרה","ספק","שכחתי","שכח","נזכר","איחר",
             "פספס","תנאי","בתנאי","קרה")
+            .map { HebrewSearch.normalize(it) }.toSet()
         val asksSpecificCase=all.any { it in specificConditionWords ||
             (it.length>=4 && it.startsWith("כש")) }
         val nonJewish=normalized.contains("אינו יהודי") || normalized.contains("לא יהודי")
