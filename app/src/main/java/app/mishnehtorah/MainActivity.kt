@@ -155,9 +155,18 @@ fun RambamApp(initialQuery: String = "", debugTypeahead: Boolean = false,
                         var highlighted = 0
                         var goldAnchors = 0
                         var verifiedAnchors = 0
+                        var reviewedTotal=0
+                        var reviewedTop1=0
+                        var reviewedHighlight=0
+                        var generatedTotal=0
+                        var generatedTop1=0
+                        var generatedHighlight=0
                         for (index in 0 until cases.length()) {
                             val item = cases.getJSONObject(index)
                             val question = item.getString("question")
+                            val generated = item.optString("origin") ==
+                                "synthetic-source-derived"
+                            if (generated) generatedTotal++ else reviewedTotal++
                             val section = "הלכות " + item.getString("section")
                             val expectedChapter = item.getInt("chapter")
                             val expectedLaw = item.getInt("law")
@@ -167,7 +176,10 @@ fun RambamApp(initialQuery: String = "", debugTypeahead: Boolean = false,
                             val top = answers.firstOrNull()
                             val accurate = top != null && top.section.endsWith(section) &&
                                 top.chapter == expectedChapter && top.number == expectedLaw
-                            if (accurate) passed++
+                            if (accurate) {
+                                passed++
+                                if (generated) generatedTop1++ else reviewedTop1++
+                            }
                             val passage = if (top != null) engine.relevantPassage(top, question) else null
                             val required = item.optString("highlight_contains", "")
                             val boundsValid = passage != null && top != null &&
@@ -205,7 +217,10 @@ fun RambamApp(initialQuery: String = "", debugTypeahead: Boolean = false,
                             // masquerade as measured 100% correctness.
                             val passageValid=boundsValid && (!hasGoldAnchor || anchorValid)
                             if (accurate && passageValid) highlighted++
-                            if (accurate && anchorValid) verifiedAnchors++
+                            if (accurate && anchorValid) {
+                                verifiedAnchors++
+                                if (generated) generatedHighlight++ else reviewedHighlight++
+                            }
                             val excerpt = if (boundsValid)
                                 top!!.text.substring(passage!!.start, passage!!.end)
                                     .replace('\n', ' ').take(130) else "none"
@@ -213,6 +228,7 @@ fun RambamApp(initialQuery: String = "", debugTypeahead: Boolean = false,
                                 "${if (accurate) "PASS" else "FAIL"} tier=${item.getInt("tier")} " +
                                 "top=${top?.reference ?: "none"} " +
                                 "expected=$section/$expectedChapter/$expectedLaw " +
+                                "cohort=${if (generated) "synthetic" else "reviewed"} " +
                                 "passage=$passageValid anchor=$anchorValid " +
                                 "goldCoverage=$goldCoverage highlightPrecision=$highlightPrecision " +
                                 "spanLength=${if (passage!=null) passage.end-passage.start else -1} " +
@@ -225,7 +241,11 @@ fun RambamApp(initialQuery: String = "", debugTypeahead: Boolean = false,
                         Log.i("RambamQuality", "${prefix}_COMPLETE run_id=$runId passed=$passed total=${cases.length()} " +
                             "highlighted=$highlighted verifiedAnchors=$verifiedAnchors goldAnchors=$goldAnchors " +
                             "median_ms=$median p95_ms=$p95 " +
-                            "max_ms=${sorted.last()}")
+                            "max_ms=${sorted.last()} " +
+                            "reviewedTotal=$reviewedTotal reviewedTop1=$reviewedTop1 " +
+                            "reviewedHighlights=$reviewedHighlight " +
+                            "syntheticTotal=$generatedTotal syntheticTop1=$generatedTop1 " +
+                            "syntheticHighlights=$generatedHighlight")
                     }
                 } catch (error: Throwable) {
                     Log.e("RambamQuality", when {
