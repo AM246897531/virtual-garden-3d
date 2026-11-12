@@ -95,6 +95,41 @@ class HebrewQueryRegressionTest {
             .intent==SearchLanguage.Intent.WHERE)
     }
 
+    @Test fun longNaturalLanguageMetaInstructionsDoNotOvertakeHalakhicQuestion() {
+        val actual="מה עושים אם שכחתי להזכיר ראש חודש בברכת המזון?"
+        val longPrompts=listOf(
+            "יש לי בקשה למצוא מראה מקום במשנה תורה לרמב״ם. " +
+                "אין צורך להוסיף מידע שאינו כתוב במקור. "+actual,
+            actual+" בבקשה תן לי את המקור ההלכתי המדויק ברמב״ם ולא סיכום כללי.",
+            "אני לומד את משנה תורה ורוצה לוודא את לשון המקור. " +
+                "אינני מבקש פרשנות עצמאית. השאלה הספציפית שלי היא: " +
+                actual+" תציג את ההלכה שממנה לומדים זאת.",
+            "לצורך עיון בטקסט תורני וללא הסתמכות על תשובה משוערת, " +
+                "אני מבקש תשובה מבוססת מקור בלבד. "+actual+
+                " אם קיימים כמה מקורות דומים, תן עדיפות למקור שממש עונה לשאלה."
+        )
+        for(longPrompt in longPrompts){
+            val extracted=SearchLanguage.focusedEvidenceQuery(longPrompt)
+            assertTrue("Lost substantive fact pattern: $extracted",
+                extracted.contains("ראש חודש") && extracted.contains("שכחתי") &&
+                    extracted.contains("ברכת המזון"))
+            assertFalse("Kept irrelevant instructions: $extracted",
+                extracted.contains("מראה מקום") ||
+                    extracted.contains("תן עדיפות למקור") ||
+                    extracted.contains("פרשנות עצמאית"))
+        }
+    }
+
+    @Test fun longMultipleRealConditionsRemainInTheFocusedQuestion() {
+        val question="אכלתי סעודה בשבת ולא אמרתי את התוספת. " +
+            "נזכרתי רק אחרי שכבר התחלתי ברכה רביעית. " +
+            "האם צריך לחזור לברכת המזון?"
+        val result=SearchLanguage.focusedEvidenceQuery(question)
+        assertTrue(result.contains("שבת"))
+        assertTrue(result.contains("ברכה רביעית"))
+        assertTrue(result.contains("לחזור"))
+    }
+
     @Test fun fullOriginalQueryStaysUnmodifiedWithoutMultipleClauses() {
         val q="מהי דרך האופי הישרה לפי הרמבם?"
         assertTrue(SearchLanguage.focusedEvidenceQuery(q)==q)
