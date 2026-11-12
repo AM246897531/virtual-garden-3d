@@ -375,6 +375,27 @@ internal object SearchLanguage {
         }
         if (socialQuery && influenceQuery)
             output.add("דעות הנהגות חכמים חברים רעים השפעה סביבה מעשים")
+        // General colloquial-language -> classical terminology bridges.
+        // These are topical retrieval routes, not question-to-chapter IDs.
+        // Require *conjunctions* to avoid injecting irrelevant law topics.
+        val normalizedWords=q.split(' ')
+        fun hasAny(vararg parts:String)=parts.any { q.contains(it) }
+        if (hasAny("שבת") && hasAny("פטור") &&
+            hasAny("מותר","איסור","אסור","דינ","מה פירוש"))
+            output.add("פטור שבת אסור מדרבנן")
+        if (hasAny("אופי","מדות","מידות","התנהגות","קיצונ") &&
+            hasAny("קיצונ","אמצע","בינוני","ממוצע") &&
+            hasAny("קיצונ","בחירה","לבחור","בינוני"))
+            output.add("דעות מדות קצוות דרך ממוצעת דרך ישרה")
+        if (hasAny("מתודה","מתווד","וידוי","להתוודות") &&
+            hasAny("ממשיכ","להמשיכ","להמשיך","לא מתכונ","מתכונ","חוזר","לעזוב","עזב"))
+            output.add("וידוי דברים תשובה לא גמר בלבו לעזוב החטא")
+        if (hasAny("עירוב חצרות","עירובי חצרות","עירוב בחצר") &&
+            hasAny("אוכל","מאכל","מזון","משותפ","מניח","פת"))
+            output.add("שיתערבו במאכל אחד ויניחוהו בחצר עירובי חצרות")
+        if (hasAny("ציבור","צבור","צרות","צרה","תענית") &&
+            hasAny("מקרה","מקרי","קרי","לא מתעורר","לא מבקש להתעורר"))
+            output.add("ציבור צרה זעקה תשובה קרי מקרה תענית")
         // Whole words only. Substring tests would mistake "ערב" for "רב"
         // and "אבידה" for "אב", triggering unrelated topic expansions.
         val queryWords=q.split(' ').toHashSet()
