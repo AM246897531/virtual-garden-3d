@@ -68,6 +68,12 @@ class HebrewQueryRegressionTest {
         assertTrue(negated.hasNegation)
         assertFalse(positive.hasNegation)
         assertTrue(negated.asksSpecificCase)
+        assertTrue(SearchLanguage.analyze(
+            "אין לי אפשרות לקיים את המצווה").hasNegation)
+        assertTrue(SearchLanguage.analyze(
+            "אם שכחתי את הברכה מה הדין").asksSpecificCase)
+        assertFalse(SearchLanguage.analyze(
+            "מהם עיקרי הלכות שבת").asksSpecificCase)
     }
 
     @Test fun fullOriginalQueryStaysUnmodifiedWithoutMultipleClauses() {
