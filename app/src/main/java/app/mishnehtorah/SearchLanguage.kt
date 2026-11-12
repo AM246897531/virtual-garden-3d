@@ -235,6 +235,22 @@ internal object SearchLanguage {
     private val intentRequire = setOf("חייב", "חובה", "מצווה", "מצות", "צריך", "רשאי", "מותר", "אסור").map { HebrewSearch.normalize(it) }.toSet()
     private val intentCondition = setOf("אם", "כאשר", "למרות", "אפילו", "במקרה", "ספק", "שכחתי", "שכח").map { HebrewSearch.normalize(it) }.toSet()
 
+    /**
+     * More than thirty existing lexical keys contain final Hebrew consonants
+     * (e.g., חברים, סימנים, לשון), but query tokens have already had those
+     * letters folded (חברימ, סימנימ, לשונ). The raw-key dictionary therefore
+     * silently misses legitimate synonyms. Keep both variants for a genuine
+     * 100+40 Robolectric A/B test before enabling the normalized one.
+     */
+    private val normalizedSynonyms: Map<String,List<String>> by lazy {
+        val indexed=LinkedHashMap<String,MutableList<String>>()
+        for ((key,variants) in synonyms)
+            indexed.getOrPut(HebrewSearch.normalize(key)) { mutableListOf() }
+                .addAll(variants)
+        indexed.mapValues { (_,items)->items.distinct() }
+    }
+    @Volatile internal var useNormalizedSynonymKeys=false
+
     fun analyze(question: String): Analysis {
         val normalized=HebrewSearch.normalize(question.replace("ר״ח", "ראש חודש").replace("ר\"ח", "ראש חודש"))
         val all=normalized.split(' ').filter { it.isNotBlank() }
@@ -296,13 +312,14 @@ internal object SearchLanguage {
             if ((word.length<3 && word !in meaningfulShort) ||
                 word in stop || word.startsWith("הרמב") || word.startsWith("רמב") ||
                 (discourseLead && word=="רוצה")) continue
+            val lexicon=if (useNormalizedSynonymKeys) normalizedSynonyms else synonyms
             var lexicalKey=word
-            if (!synonyms.containsKey(lexicalKey)) {
+            if (!lexicon.containsKey(lexicalKey)) {
                 var without=word
                 repeat(3) {
                     if (without.length>=4 && without.first() in charArrayOf('ב','ה','ו','ל','מ','ש','כ')) {
                         without=without.drop(1)
-                        if (synonyms.containsKey(without)) lexicalKey=without
+                        if (lexicon.containsKey(without)) lexicalKey=without
                     }
                 }
             }
@@ -311,7 +328,7 @@ internal object SearchLanguage {
             val unprefixed=if (word.length>=4 &&
                 word.first() in charArrayOf('ב','ה','ו','ל','מ','ש','כ'))
                 word.drop(1) else ""
-            val alternatives=(listOf(word,lexicalKey,unprefixed)+synonyms[lexicalKey].orEmpty())
+            val alternatives=(listOf(word,lexicalKey,unprefixed)+lexicon[lexicalKey].orEmpty())
                 .map { HebrewSearch.normalize(it) }.filter { it.length>=3 && !it.contains(' ') }
                 .distinct().take(10)
             val stem=stem(word)
