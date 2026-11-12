@@ -101,9 +101,15 @@ class CorpusStore private constructor(
                         "Bundled chapter context index is incomplete"
                     }
                 }
+                val matchedCharacterIndex=characterIndex?.takeIf {
+                    it.matchesCorpus(opened)
+                }
+                if (characterIndex != null && matchedCharacterIndex == null)
+                    Log.w("RambamSearch",
+                        "Character retrieval asset law IDs do not match installed SQLite; disabled")
                 Log.i("RambamSearch", "SMART_SEARCH_READY corpus=valid semantic=loaded " +
-                    "char3=${if (characterIndex != null) "loaded" else "unavailable"}")
-                CorpusStore(opened, model, characterIndex)
+                    "char3=${if (matchedCharacterIndex != null) "verified" else "unavailable"}")
+                CorpusStore(opened, model, matchedCharacterIndex)
             } catch (error: Exception) {
                 opened.close()
                 throw error
