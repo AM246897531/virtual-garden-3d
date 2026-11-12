@@ -378,7 +378,6 @@ internal object SearchLanguage {
         // General colloquial-language -> classical terminology bridges.
         // These are topical retrieval routes, not question-to-chapter IDs.
         // Require *conjunctions* to avoid injecting irrelevant law topics.
-        val normalizedWords=q.split(' ')
         fun hasAny(vararg parts:String)=parts.any { q.contains(it) }
         if (hasAny("שבת") && hasAny("פטור") &&
             hasAny("מותר","איסור","אסור","דינ","מה פירוש"))
@@ -435,8 +434,10 @@ internal object SearchLanguage {
             val isQuestion=suffix.startsWith("?") || n.startsWith("מה ") ||
                 n.startsWith("מתי ") || n.startsWith("האם ") ||
                 n.startsWith("באיזה ") || n.contains(" שכחתי ")
-            val boilerplate=if (listOf("אני מבקש למצוא","אני מנסה להבין",
-                "המקור הנכון","ההלכה המדויקת","משנה תורה לרמב").any {
+            val boilerplate=if (listOf("אני מבקש למצוא","אני מבקש להבין",
+                "אני מחפש את המקור","אני מנסה להבין",
+                "להסתמך על סיכום","המקור הנכון","ההלכה המדויקת",
+                "משנה תורה לרמב").any {
                     n.contains(HebrewSearch.normalize(it))
                 }) 12 else 0
             Triple(i,chunk,meaningful+(if (isQuestion) 6 else 0)-boilerplate)
