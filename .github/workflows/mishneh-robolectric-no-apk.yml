@@ -10,6 +10,7 @@ on:
       - app/src/test/java/app/mishnehtorah/RambamRankingWeightAblationTest.kt
       - app/src/test/java/app/mishnehtorah/RambamEvidenceGateAblationTest.kt
       - app/src/test/java/app/mishnehtorah/RambamSynonymKeyAblationTest.kt
+      - app/src/test/java/app/mishnehtorah/RambamHighlightAblationTest.kt
       - app/src/main/java/app/mishnehtorah/SearchLanguage.kt
       - app/src/main/java/app/mishnehtorah/PreciseEvidenceSearch.kt
       - app/src/main/java/app/mishnehtorah/CorpusStore.kt
@@ -53,13 +54,13 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.10.2'
-      - name: Strict actual Kotlin Q500 Top1 and original-text highlight acceptance, no APK
-        run: gradle --no-daemon --console plain :app:testDebugUnitTest --tests app.mishnehtorah.RambamRealEngine500Test
+      - name: A/B adaptive turquoise source-span refinement on 500 real Kotlin source questions, no APK
+        run: gradle --no-daemon --console plain :app:testDebugUnitTest --tests app.mishnehtorah.RambamHighlightAblationTest
       - name: Print all available real engine case results
         if: always()
         run: |
           if [ -d app/build/test-results/testDebugUnitTest ]; then
-            grep -rho 'REAL_KOTLIN_ROBOLECTRIC_Q500_SUMMARY[^<]*' app/build/test-results/testDebugUnitTest | tail -n 5 || true
+            grep -rho 'KOTLIN_HIGHLIGHT_ABLATION_RESULT[^<]*' app/build/test-results/testDebugUnitTest | tail -n 20 || true
           fi
       - name: Verify NO APK has been assembled or packaged
         if: always()
