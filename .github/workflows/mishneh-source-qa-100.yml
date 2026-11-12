@@ -17,6 +17,7 @@ on:
       - scripts/test_verbose_query_recall_100.py
       - scripts/test_focused_conversation_100.py
       - scripts/test_contrastive_nonopening_100.py
+      - scripts/test_char_trigram_holdout40.py
       - scripts/quality_holdout_nonopening_40.json
       - scripts/validate_holdout_nonopening_40.py
       - scripts/verify_android_100_accuracy.py
@@ -60,6 +61,8 @@ jobs:
         run: python scripts/test_focused_conversation_100.py
       - name: Audit 100 non-opening-law examples to detect benchmark first-law bias
         run: python scripts/test_contrastive_nonopening_100.py
+      - name: Measure Top-K source candidate recall on 40 independent non-opening Hebrew questions
+        run: python scripts/test_char_trigram_holdout40.py
       - name: Confirm early-versus-late Hebrew time intent and unmodified evidence offsets
         run: python scripts/test_natural_query_semantics.py
       - name: Verify 40 additional non-first-law free-form questions and their source anchors
