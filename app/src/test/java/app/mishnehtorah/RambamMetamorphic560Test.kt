@@ -23,6 +23,53 @@ import kotlinx.coroutines.runBlocking
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk=[35])
 class RambamMetamorphic560Test {
+    /**
+     * Pure query-understanding acceptance: before ranking any law, confirm
+     * that generic search instructions did not erase the actual case and
+     * that the focused query is not still mostly procedural padding.
+     */
+    @Test fun allWrappersKeepTheFactualQuestionWithoutGenericInstructions() {
+        val c=RuntimeEnvironment.getApplication() as Context
+        val handwritten=ArrayList<String>()
+        for(file in listOf("quality_natural_100.json",
+                "quality_holdout_nonopening_40.json")){
+            val arr=JSONArray(c.assets.open(file)
+                .bufferedReader().use { it.readText() })
+            for(i in 0 until arr.length())
+                handwritten.add(arr.getJSONObject(i).getString("question"))
+        }
+        assertEquals(140,handwritten.size)
+        val cases=JSONArray(c.assets.open("quality_560_wrapper_stress.json")
+            .bufferedReader().use { it.readText() })
+        assertEquals(560,cases.length())
+        var retained=0
+        var isolated=0
+        var strict=0
+        val missing=ArrayList<Int>()
+        for(i in 0 until cases.length()){
+            val item=cases.getJSONObject(i)
+            val original=handwritten[item.getInt("parent_question_index")-1]
+            val focus=SearchLanguage.focusedEvidenceQuery(item.getString("question"))
+            val lawWords=HebrewSearch.normalize(original).split(' ')
+                .filter{it.length>=4}.toSet()
+            val focusWords=HebrewSearch.normalize(focus).split(' ')
+                .filter{it.length>=4}.toSet()
+            val common=lawWords.intersect(focusWords).size.toFloat()
+            val coverage=common/maxOf(1,lawWords.size)
+            val unrelated=(focusWords-lawWords).size
+            if(coverage>=.80f)retained++ else missing.add(i+1)
+            if(unrelated<=maxOf(2,lawWords.size/3))isolated++
+            if(coverage>=.80f && unrelated<=maxOf(2,lawWords.size/3))
+                strict++
+        }
+        println("REAL_KOTLIN_FOCUS_Q560 retained=$retained/560 " +
+            "boilerplate_isolated=$isolated/560 both=$strict/560 " +
+            "missing_core_case_numbers=${missing.take(25)}")
+        assertEquals("An original halakhic condition was lost",560,retained)
+        assertEquals("Administrative instruction text still pollutes source evidence",
+            560,isolated)
+    }
+
     @Test fun invariantLegalQuestionsPreserveTopOneAndPreciseAnswers() = runBlocking {
         val context=RuntimeEnvironment.getApplication() as Context
         val store=CorpusStore.open(context)
