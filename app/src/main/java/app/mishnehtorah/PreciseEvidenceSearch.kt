@@ -658,10 +658,15 @@ internal class PreciseEvidenceSearch(
             // Definition/overview questions usually begin at the chapter's
             // introductory source. This small prior never overrides direct
             // evidence for a specific exception, deadline, or condition.
-            val overview = analysis.intent==SearchLanguage.Intent.GENERAL ||
-                analysis.intent==SearchLanguage.Intent.REQUIREMENT
-            val sourceOpeningBonus=if (overview && !analysis.deadlineOverrun &&
-                lawOrdinals[passage.lawId]==1) 15f else 0f
+            // A source opening is a useful candidate, not presumptively
+            // the answer. In a specific fact pattern (even if phrased as
+            // "what does Rambam say"), giving the first law a fixed bonus
+            // would make long, non-opening laws unfairly lose their cases.
+            val overview=!analysis.asksSpecificCase && !analysis.deadlineOverrun &&
+                (analysis.intent==SearchLanguage.Intent.GENERAL ||
+                 analysis.intent==SearchLanguage.Intent.REQUIREMENT)
+            val sourceOpeningBonus=if (overview &&
+                lawOrdinals[passage.lawId]==1) 4f else 0f
             // A small independent text-similarity corroboration helps break
             // ties; exact source evidence still dominates the 110-point
             // concept coverage score. New route may be disabled by not
