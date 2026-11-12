@@ -57,6 +57,13 @@ def gate(log: str, expected_total: int=100, prefix: str="Q100",
         if number in rows:
             raise AssertionError(f"Duplicate case {number}; results may be stale")
         line=match.group(0)
+        if prefix=="Q500":
+            cohort_match=re.search(r"\bcohort=(reviewed|synthetic)\b",line)
+            if not cohort_match:
+                raise AssertionError(f"Missing required source provenance case {number}")
+            expected_cohort="reviewed" if number<=140 else "synthetic"
+            if cohort_match.group(1)!=expected_cohort:
+                raise AssertionError(f"Source provenance mismatch in case {number}")
         def real(name: str) -> float:
             m=re.search(r"\b"+re.escape(name)+r"=(-?(?:\d+)(?:\.\d+)?)",line)
             if not m:raise AssertionError(f"Missing {name} for case {number}")
@@ -86,6 +93,16 @@ def gate(log: str, expected_total: int=100, prefix: str="Q100",
     for field in ("total","passed","highlighted","goldAnchors","verifiedAnchors"):
         if metric(field)!=expected_total:
             raise AssertionError(f"Final {field} does not equal {expected_total}")
+    if prefix=="Q500":
+        for key,value in (
+            ("reviewedTotal",140),("reviewedTop1",140),
+            ("reviewedHighlights",140),("syntheticTotal",360),
+            ("syntheticTop1",360),("syntheticHighlights",360)
+        ):
+            if metric(key)!=value:
+                raise AssertionError(
+                    f"Q500 provenance cohort {key} != {value}; not 500 independent human queries"
+                )
     if max_p95_ms is not None and metric("p95_ms")>max_p95_ms:
         raise AssertionError("Observed p95 search time exceeds acceptance threshold")
     return {"prefix":prefix,"run_id":run_id,"total":expected_total,
@@ -112,6 +129,10 @@ def main() -> int:
     print(f"{args.prefix}_STRICT_GATE_PASS run_id={r['run_id']} "
           f"sources={total}/{total} exact_anchors={total}/{total} "
           f"median_ms={r['median_ms']} p95_ms={r['p95_ms']}")
+    if args.prefix=="Q500":
+        print("Q500_PROVENANCE_CAUTION: 140 preexisting freeform + "
+              "360 generated source-derived; a perfect gate does NOT "
+              "establish 500 independent freeform questions or 100% universal understanding")
     return 0
 
 if __name__=="__main__":
