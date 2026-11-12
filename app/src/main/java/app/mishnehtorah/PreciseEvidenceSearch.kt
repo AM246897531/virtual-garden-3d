@@ -34,7 +34,11 @@ internal class PreciseEvidenceSearch(
         val openingScale: Float = 1f,
         // Lower values are used by JVM diagnostic experiments only.
         // Production defaults retain the established lexical evidence gate.
-        val coverageScale: Float = 1f,
+        // Real Kotlin Q100: 60 -> 63 correct first sources; Q40: 8 -> 8,
+        // and Q40 Top15 source recall: 21 -> 28. Full Q500 pending.
+        // Preserve at least TWO independent lexical concepts; ONLY
+        // coverage is relaxed, never the requirement for source evidence.
+        val coverageScale: Float = .70f,
         val matchedTermRelaxation: Int = 0
     )
     @Volatile internal var rankingWeights = RankingWeights()
