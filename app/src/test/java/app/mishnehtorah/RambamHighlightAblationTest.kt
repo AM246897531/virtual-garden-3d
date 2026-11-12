@@ -81,6 +81,20 @@ class RambamHighlightAblationTest {
         return best?:base
     }
 
+    /**
+     * Evidence overlap is computed solely from user query and authentic law,
+     * not from dataset provenance or expected answer offsets.
+     * This permits opt-in shortening only when the source literally supports
+     * many of the user's substantive words.
+     */
+    private fun querySourceVerbatimCoverage(question:String,text:String):Float {
+        val terms=HebrewSearch.normalize(SearchLanguage.focusedEvidenceQuery(question))
+            .split(' ').filter { it.length>=4 && it !in stop }.distinct()
+        if (terms.isEmpty())return 0f
+        val source=HebrewSearch.normalize(text).split(' ').toHashSet()
+        return terms.count { it in source }.toFloat()/terms.size
+    }
+
     @Test fun evaluateOnlyVerbatimUntrainedWindowPolices() = runBlocking {
         val context=RuntimeEnvironment.getApplication() as Context
         val store=CorpusStore.open(context)
@@ -89,8 +103,9 @@ class RambamHighlightAblationTest {
         val cases=JSONArray(raw)
         assertEquals(500,cases.length())
         val correct=IntArray(2)
-        val wins=Array(3){IntArray(2)}
-        val covered=Array(3){IntArray(2)}
+        val wins=Array(8){IntArray(2)}
+        val covered=Array(8){IntArray(2)}
+        val eligible=Array(4){IntArray(2)}
         for(i in 0 until 500){
             val item=cases.getJSONObject(i)
             val q=item.getString("question")
@@ -103,12 +118,24 @@ class RambamHighlightAblationTest {
                 law.number!=item.getInt("law"))continue
             correct[cohort]++
             val baseline=store.relevantPassage(law,q)
+            val compact=findBest(law.text,q,baseline,true)
+            val overlap=querySourceVerbatimCoverage(q,law.text)
+            // Candidate 3..6 = adaptive whole-law snippet shortening only
+            // when question terms are sufficiently present in the source.
+            val thresholds=floatArrayOf(.25f,.40f,.55f,.70f)
+            val adaptive=thresholds.mapIndexed { ix,threshold ->
+                if (overlap>=threshold) {
+                    eligible[ix][cohort]++
+                    compact
+                } else baseline
+            }
             val casesToCompare=listOf(baseline,
-                findBest(law.text,q,baseline,false),
-                findBest(law.text,q,baseline,true))
+                findBest(law.text,q,baseline,false),compact)+adaptive+
+                listOf(if(overlap>=.55f)
+                    findBest(law.text,q,baseline,false) else baseline)
             val begin=item.getInt("highlight_start_utf16")
             val end=item.getInt("highlight_end_utf16")
-            for(policy in 0..2){
+            for(policy in casesToCompare.indices){
                 val span=casesToCompare[policy]?:continue
                 val valid=span.start>=0 && span.end<=law.text.length &&
                     span.end>span.start && span.end-span.start<=360
@@ -129,11 +156,13 @@ class RambamHighlightAblationTest {
         }
         println("KOTLIN_HIGHLIGHT_ABLATION_CORRECT_SOURCE " +
             "manual=${correct[0]}/140 synthetic=${correct[1]}/360")
-        for(policy in 0..2)println(
+        for(policy in wins.indices)println(
             "KOTLIN_HIGHLIGHT_ABLATION_RESULT policy=$policy " +
             "manual_strict=${wins[policy][0]}/${correct[0]} " +
             "synthetic_strict=${wins[policy][1]}/${correct[1]} " +
             "manual_coverage=${covered[policy][0]} " +
-            "synthetic_coverage=${covered[policy][1]}")
+            "synthetic_coverage=${covered[policy][1]} " +
+            "selected_manual=${if(policy in 3..6)eligible[policy-3][0] else -1} " +
+            "selected_synthetic=${if(policy in 3..6)eligible[policy-3][1] else -1}")
     }
 }
