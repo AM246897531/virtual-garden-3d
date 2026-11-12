@@ -31,6 +31,8 @@ def run():
     assert DB.exists(),"Source DB missing: run build_corpus.py first"
     gold=json.loads(GOLD.read_text())
     assert len(gold)==100
+    holdout=json.loads((ROOT/"scripts/quality_holdout_nonopening_40.json").read_text())
+    assert len(holdout)==40 and all(case["law"]>1 for case in holdout)
     db=sqlite3.connect(DB)
     rows=db.execute("SELECT id, section, chapter, halakhah, body FROM laws ORDER BY id").fetchall()
     assert len(rows)>=15000
@@ -48,13 +50,21 @@ def run():
     qvec=model.encode(queries,batch_size=24,normalize_embeddings=True,
                       convert_to_numpy=True).astype("float32")
     sim=qvec@documents.T
-    del documents,qvec,model
+    holdout_qvec=model.encode(
+        ["query: "+case["question"] for case in holdout],
+        batch_size=24,normalize_embeddings=True,
+        convert_to_numpy=True).astype("float32")
+    sim_holdout=holdout_qvec@documents.T
+    del documents,qvec,holdout_qvec,model
     # Reference-independent char TF-IDF is a distinct corroborating signal.
     vectorizer=TfidfVectorizer(analyzer="char",ngram_range=(3,5),
                               min_df=2,max_features=200000,sublinear_tf=True)
     x=vectorizer.fit_transform([normalized(r[4])[:950] for r in rows])
     q=vectorizer.transform([normalized(s) for s in questions])
     lex=(q@x.T).toarray().astype("float32")
+    lex_holdout=(vectorizer.transform(
+        [normalized(case["question"]) for case in holdout])@x.T
+    ).toarray().astype("float32")
     # Store raw source-agnostic scores for independent, held-out fusion
     # experiments. Never store or encode the expected source in a score.
     # Scores are research artifacts ONLY and are not shipped into Android.
@@ -63,6 +73,8 @@ def run():
         OUT.with_name("experimental_e5_scores_100.npz"),
         semantic=sim.astype(np.float16),
         lexical=lex.astype(np.float16),
+        semantic_holdout=sim_holdout.astype(np.float16),
+        lexical_holdout=lex_holdout.astype(np.float16),
         doc_ids=np.asarray([r[0] for r in rows],dtype=np.int32),
     )
     # No tuning on gold outcomes: predeclare three fixed weights.
@@ -89,11 +101,28 @@ def run():
                        "recall_at_5":sum(v<=5 for v in ranks),
                        "recall_at_20":sum(v<=20 for v in ranks),
                        "median_rank":float(np.median(ranks))}
+    expected_holdout=[(h["section"],int(h["chapter"]),int(h["law"]))
+                      for h in holdout]
+    reference_positions={label:i for i,label in enumerate(labels)}
+    holdout_report={}
+    for name,(a,b) in mixes.items():
+        scores=a*sim_holdout+b*lex_holdout
+        ranks=[]
+        for i,want in enumerate(expected_holdout):
+            pos=reference_positions.get(want)
+            rank=(int(np.sum(scores[i]>scores[i,pos])+1)
+                  if pos is not None else len(rows)+1)
+            ranks.append(rank)
+        holdout_report[name]={"top1":sum(v==1 for v in ranks),
+            "recall_at_5":sum(v<=5 for v in ranks),
+            "recall_at_20":sum(v<=20 for v in ranks),
+            "median_rank":float(np.median(ranks))}
     data={"test_type":"NO_APK experimental dual-encoder retrieval",
           "model":MODEL,"parameters_approx":34222464,
           "questions":100,"documents":len(rows),
           "runtime_seconds":round(time.monotonic()-t0,1),
-          "results":reports,"cases":cases,
+          "results":reports,
+          "nonopening_40_results":holdout_report,"cases":cases,
           "android_highlighting_accuracy":None,
           "limitations":["No Android APK compiled","No answer span evaluation",
              "One question may have several legitimate halakhot",
@@ -101,4 +130,5 @@ def run():
     OUT.parent.mkdir(parents=True,exist_ok=True)
     OUT.write_text(json.dumps(data,ensure_ascii=False,indent=2)+"\n")
     print("E5_100_EXPERIMENT "+json.dumps(reports),flush=True)
+    print("E5_NONOPENING_40_EXPERIMENT "+json.dumps(holdout_report),flush=True)
 if __name__=="__main__":run()
