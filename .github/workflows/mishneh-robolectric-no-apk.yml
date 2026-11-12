@@ -8,6 +8,7 @@ on:
       - app/src/test/java/app/mishnehtorah/RambamHighlightAblationTest.kt
       - app/src/test/java/app/mishnehtorah/RambamMetamorphic560Test.kt
       - app/src/test/java/app/mishnehtorah/RambamSemanticSpanAblationTest.kt
+      - app/src/test/java/app/mishnehtorah/RambamOpeningAnswerSpanAblationTest.kt
       - scripts/build_quality_560_wrapper_stress.py
       - scripts/build_gold_answer_offsets.py
       - app/src/test/java/app/mishnehtorah/RambamHighlightDiagnosticTest.kt
@@ -60,16 +61,13 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.10.2'
-      - name: Run BOTH strict real Kotlin 500 original source QA and 560 adversarial long-query QA, NO APK
-        run: |
-          gradle --no-daemon --console plain :app:testDebugUnitTest \
-            --tests app.mishnehtorah.RambamRealEngine500Test \
-            --tests app.mishnehtorah.RambamMetamorphic560Test
+      - name: A/B seven genuine Rambam answer-clause opening spans against all 500 Kotlin questions, NO APK
+        run: gradle --no-daemon --console plain :app:testDebugUnitTest --tests app.mishnehtorah.RambamOpeningAnswerSpanAblationTest
       - name: Print all available real engine case results
         if: always()
         run: |
           if [ -d app/build/test-results/testDebugUnitTest ]; then
-            grep -rhoE '(REAL_KOTLIN_METAMORPHIC_Q560_SUMMARY|REAL_KOTLIN_ROBOLECTRIC_Q500_SUMMARY|REAL_KOTLIN_FOCUS_Q560)[^<]*' app/build/test-results/testDebugUnitTest | tail -n 12 || true
+            grep -rho 'REAL_KOTLIN_OPENING_SPAN_RESULT[^<]*' app/build/test-results/testDebugUnitTest | tail -n 12 || true
           fi
       - name: Verify NO APK has been assembled or packaged
         if: always()
