@@ -1,0 +1,37 @@
+name: Kotlin type-check only - never assemble an APK
+on:
+  push:
+    branches: [feature/mishneh-torah-search-100qa]
+    paths:
+      - app/src/main/java/app/mishnehtorah/**
+      - app/build.gradle.kts
+      - .github/workflows/mishneh-kotlin-typecheck-only.yml
+  workflow_dispatch:
+jobs:
+  kotlin-typecheck:
+    name: Kotlin source typecheck only (no APK)
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Install Android platform for typecheck
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+      - name: Compile Kotlin source files only - never assemble/package/install
+        run: gradle --no-daemon --console plain :app:compileDebugKotlin
+      - name: Certify output contains no APK
+        run: |
+          if find app/build -type f -name '*.apk' -print -quit | grep -q .; then
+            echo 'Unexpected APK created in Kotlin-only validation' >&2
+            exit 1
+          fi
+          echo 'KOTLIN_SOURCE_TYPECHECK_PASS apk_created=false'
