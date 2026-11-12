@@ -80,13 +80,13 @@ def derive_one_suite(db,expected,source,debug,report_file):
         report.append({"case":case_index,"original_start_utf16":ustart,
                        "original_end_utf16":uend,"anchor_length_utf16":uend-ustart})
     debug.parent.mkdir(parents=True,exist_ok=True)
-    debug.write_text(json.dumps(updated,ensure_ascii=False,indent=2)+"\\n",encoding="utf-8")
+    debug.write_text(json.dumps(updated,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
     report_file.parent.mkdir(parents=True,exist_ok=True)
     summary={"type":"source-only gold offset derivation, NOT Android highlight result",
              "questions":len(updated),"sources_with_gold_offsets":len(report),
              "max_gold_span_utf16":max(q["anchor_length_utf16"] for q in report),
              "cases":report}
-    report_file.write_text(json.dumps(summary,ensure_ascii=False,indent=2)+"\\n",encoding="utf-8")
+    report_file.write_text(json.dumps(summary,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
     print(f"RANGE_GOLD_{expected}_COMPLETE sources={expected}/{expected} "
           f"exact_original_offsets={expected}/{expected} "
           f"max_anchor_chars={summary['max_gold_span_utf16']} "
