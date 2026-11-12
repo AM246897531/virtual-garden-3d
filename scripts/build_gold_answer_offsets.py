@@ -11,10 +11,15 @@ from pathlib import Path
 from build_corpus import normalize
 
 ROOT=Path(__file__).resolve().parents[1]
-SOURCE=ROOT/"scripts/quality_natural_100.json"
 DB=ROOT/"app/src/main/assets/rambam.sqlite"
-DEBUG=ROOT/"app/src/debug/assets/quality_natural_100.json"
-REPORT=ROOT/"artifacts/gold_answer_offsets_100.json"
+SUITES=(
+    (100,ROOT/"scripts/quality_natural_100.json",
+         ROOT/"app/src/debug/assets/quality_natural_100.json",
+         ROOT/"artifacts/gold_answer_offsets_100.json"),
+    (40,ROOT/"scripts/quality_holdout_nonopening_40.json",
+        ROOT/"app/src/debug/assets/quality_holdout_nonopening_40.json",
+        ROOT/"artifacts/gold_answer_offsets_40.json"),
+)
 FINAL_FOLD=str.maketrans("ךםןףץ","כמנפצ")
 
 def normalized_with_offsets(text: str):
@@ -45,10 +50,9 @@ def normalized_with_offsets(text: str):
 def to_utf16(text: str, pos: int):
     return len(text[:pos].encode("utf-16-le"))//2
 
-def main():
-    cases=json.loads(SOURCE.read_text(encoding="utf-8"))
-    assert len(cases)==100 and len({v["question"] for v in cases})==100
-    db=sqlite3.connect(DB)
+def derive_one_suite(db,expected,source,debug,report_file):
+    cases=json.loads(source.read_text(encoding="utf-8"))
+    assert len(cases)==expected and len({v["question"] for v in cases})==expected
     report=[]
     updated=[]
     for case_index,item in enumerate(cases,1):
@@ -56,14 +60,14 @@ def main():
             "SELECT body FROM laws WHERE section=? AND chapter=? AND halakhah=?",
             ("משנה תורה, הלכות "+item["section"],item["chapter"],item["law"])
         ).fetchone()
-        assert row, f"Missing genuine law for case {case_index}"
+        assert row, f"Missing genuine law for case {case_index} in {source.name}"
         original=row[0]
         anchor=normalize(item["highlight_contains"])
-        assert anchor, f"Unspecified answer evidence in case {case_index}"
+        assert anchor, f"Unspecified answer evidence {case_index}/{source.name}"
         text,source_indices=normalized_with_offsets(original)
-        assert text==normalize(original), f"Offset normalizer mismatch for case {case_index}"
+        assert text==normalize(original), f"Offset normalizer mismatch {case_index}/{source.name}"
         at=text.find(anchor)
-        assert at>=0, f"Answer evidence not literally in correct source for case {case_index}"
+        assert at>=0, f"Answer evidence not in correct source {case_index}/{source.name}"
         begin=source_indices[at]
         end=source_indices[at+len(anchor)-1]+1
         assert 0<=begin<end<=len(original)
@@ -75,16 +79,23 @@ def main():
         updated.append(out)
         report.append({"case":case_index,"original_start_utf16":ustart,
                        "original_end_utf16":uend,"anchor_length_utf16":uend-ustart})
-    DEBUG.parent.mkdir(parents=True,exist_ok=True)
-    DEBUG.write_text(json.dumps(updated,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
-    REPORT.parent.mkdir(parents=True,exist_ok=True)
+    debug.parent.mkdir(parents=True,exist_ok=True)
+    debug.write_text(json.dumps(updated,ensure_ascii=False,indent=2)+"\\n",encoding="utf-8")
+    report_file.parent.mkdir(parents=True,exist_ok=True)
     summary={"type":"source-only gold offset derivation, NOT Android highlight result",
              "questions":len(updated),"sources_with_gold_offsets":len(report),
              "max_gold_span_utf16":max(q["anchor_length_utf16"] for q in report),
              "cases":report}
-    REPORT.write_text(json.dumps(summary,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
-    print("RANGE_GOLD_100_COMPLETE sources=100/100 exact_original_offsets=100/100 "
-          f'max_anchor_chars={summary["max_gold_span_utf16"]} '
+    report_file.write_text(json.dumps(summary,ensure_ascii=False,indent=2)+"\\n",encoding="utf-8")
+    print(f"RANGE_GOLD_{expected}_COMPLETE sources={expected}/{expected} "
+          f"exact_original_offsets={expected}/{expected} "
+          f"max_anchor_chars={summary['max_gold_span_utf16']} "
           "android_highlight_accuracy=UNTESTED",flush=True)
+
+def main():
+    db=sqlite3.connect(DB)
+    for expected,source,debug,report_file in SUITES:
+        derive_one_suite(db,expected,source,debug,report_file)
+    db.close()
 
 if __name__=="__main__":main()
