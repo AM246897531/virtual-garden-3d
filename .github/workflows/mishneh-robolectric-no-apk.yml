@@ -5,6 +5,7 @@ on:
     paths:
       - app/src/test/java/app/mishnehtorah/RambamRealEngineSmokeTest.kt
       - app/src/test/java/app/mishnehtorah/RambamRankingAblationTest.kt
+      - app/src/test/java/app/mishnehtorah/RambamHighlightAblationTest.kt
       - scripts/build_semantic_index.py
       - .github/workflows/mishneh-robolectric-no-apk.yml
   workflow_dispatch:
@@ -45,13 +46,13 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.10.2'
-      - name: Compare authentic 100+40 corpus Kotlin Top15 ranking ablations (NO APK)
-        run: gradle --no-daemon --console plain :app:testDebugUnitTest --tests app.mishnehtorah.RambamRankingAblationTest
+      - name: Test authentic Kotlin turquoise answer-span reductions on all 500 sources, NO APK
+        run: gradle --no-daemon --console plain :app:testDebugUnitTest --tests app.mishnehtorah.RambamHighlightAblationTest
       - name: Print all available real engine case results
         if: always()
         run: |
           if [ -d app/build/test-results/testDebugUnitTest ]; then
-            grep -rho 'REAL_KOTLIN_ABLATION_RESULT[^<]*' app/build/test-results/testDebugUnitTest | tail -n 10 || true
+            grep -rho 'KOTLIN_HIGHLIGHT_ABLATION_RESULT[^<]*' app/build/test-results/testDebugUnitTest | tail -n 10 || true
           fi
       - name: Verify NO APK has been assembled or packaged
         if: always()
