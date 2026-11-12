@@ -31,7 +31,11 @@ internal class PreciseEvidenceSearch(
         val sectionScale: Float = 1f,
         val chapterScale: Float = 1f,
         val charScale: Float = 1f,
-        val openingScale: Float = 1f
+        val openingScale: Float = 1f,
+        // Lower values are used by JVM diagnostic experiments only.
+        // Production defaults retain the established lexical evidence gate.
+        val coverageScale: Float = 1f,
+        val matchedTermRelaxation: Int = 0
     )
     @Volatile internal var rankingWeights = RankingWeights()
     private data class Passage(val id: Int, val lawId: Int,
@@ -643,11 +647,14 @@ internal class PreciseEvidenceSearch(
             var score=evidence(analysis,weights,passage.norm,
                 HebrewSearch.normalize(sec), semanticScores[passage.lawId]?:0f,
                 aliases,tokenMatchCache)
-            val needed=if (groupCount==1) 1 else 2
-            // Penalize partial subject matches. For hard multi-concept queries
-            // a passage that lacks the specific condition is not reliable.
+            val baseNeeded=if (groupCount==1) 1 else 2
+            val needed=maxOf(1,baseNeeded-tune.matchedTermRelaxation)
+            // Compare the strict gate with more tolerant source-grounded
+            // evidence thresholds in JVM tests. The production weights keep
+            // exactly the old thresholds (coverageScale=1, relaxation=0).
             val directSupported=score.matched>=needed &&
-                score.coverage>=(if (groupCount<3) .40f else .38f)
+                score.coverage>=(if (groupCount<3) .40f else .38f) *
+                    tune.coverageScale
             var bridgeSupported=false
             if (!directSupported && passage.lawId in bridgeLawIds) {
                 // The expansion helps only if actual words in THIS source
