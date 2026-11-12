@@ -557,7 +557,7 @@ private fun LawResultCard(
     ) {
         Column(Modifier.padding(20.dp)) {
             if (first) {
-                Text("המקור המתאים ביותר • לשון הרמב״ם", fontWeight = FontWeight.Bold,
+                Text("התוצאה המדורגת ראשונה • לשון הרמב״ם", fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
                     style = MaterialTheme.typography.titleSmall)
                 Spacer(Modifier.height(12.dp))
