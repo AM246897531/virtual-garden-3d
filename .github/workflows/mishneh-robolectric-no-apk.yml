@@ -4,6 +4,7 @@ on:
     branches: [feature/mishneh-torah-search-100qa]
     paths:
       - app/src/test/java/app/mishnehtorah/RambamRealEngineSmokeTest.kt
+      - app/src/test/java/app/mishnehtorah/RambamRankingAblationTest.kt
       - scripts/build_semantic_index.py
       - .github/workflows/mishneh-robolectric-no-apk.yml
   workflow_dispatch:
@@ -44,13 +45,13 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.10.2'
-      - name: Strict 500-question authentic Kotlin top-1 + original UTF16 evidence QA (NO APK)
-        run: gradle --no-daemon --console plain :app:testDebugUnitTest --tests app.mishnehtorah.RambamRealEngine500Test
+      - name: Compare authentic 100+40 corpus Kotlin Top15 ranking ablations (NO APK)
+        run: gradle --no-daemon --console plain :app:testDebugUnitTest --tests app.mishnehtorah.RambamRankingAblationTest
       - name: Print all available real engine case results
         if: always()
         run: |
           if [ -d app/build/test-results/testDebugUnitTest ]; then
-            grep -rho 'REAL_KOTLIN_ROBOLECTRIC_Q500[^<]*' app/build/test-results/testDebugUnitTest | tail -n 520 || true
+            grep -rho 'REAL_KOTLIN_ABLATION_RESULT[^<]*' app/build/test-results/testDebugUnitTest | tail -n 10 || true
           fi
       - name: Verify NO APK has been assembled or packaged
         if: always()
