@@ -19,6 +19,8 @@ on:
       - scripts/test_contrastive_nonopening_100.py
       - scripts/quality_holdout_nonopening_40.json
       - scripts/validate_holdout_nonopening_40.py
+      - scripts/verify_android_100_accuracy.py
+      - scripts/test_strict_android_gate.py
       - scripts/check_kotlin_syntax_no_compile.py
       - scripts/experiment_multilingual_reranker_100.py
       - scripts/build_char_trigram_index.py
@@ -42,6 +44,8 @@ jobs:
         run: python -m pip install 'tree-sitter>=0.25,<0.27' 'tree-sitter-kotlin==1.1.0'
       - name: Parse changed Kotlin sources, no APK or compiler
         run: python scripts/check_kotlin_syntax_no_compile.py
+      - name: Test strict Android acceptance parser with negative and stale cases (NO APK)
+        run: python scripts/test_strict_android_gate.py
       - name: Rebuild original Mishneh Torah corpus - no Gradle or Android compilation
         run: python scripts/build_corpus.py
       - name: Build 15MB offline source-only character-recall index
