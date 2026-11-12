@@ -3,6 +3,12 @@ on:
   push:
     branches: [feature/mishneh-torah-search-100qa]
     paths:
+      - app/src/main/java/app/mishnehtorah/SearchLanguage.kt
+      - app/src/main/java/app/mishnehtorah/PreciseEvidenceSearch.kt
+      - app/src/main/java/app/mishnehtorah/CorpusStore.kt
+      - app/src/main/java/app/mishnehtorah/SemanticIndex.kt
+      - app/src/main/java/app/mishnehtorah/CharTrigramIndex.kt
+      - app/src/main/java/app/mishnehtorah/MainActivity.kt
       - scripts/quality_natural_100.json
       - scripts/validate_natural_100.py
       - scripts/test_natural_query_semantics.py
