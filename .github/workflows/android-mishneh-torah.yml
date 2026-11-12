@@ -36,7 +36,9 @@ jobs:
       - name: Construct 500 source-grounded questions with honest 140/360 provenance for QA
         run: python scripts/build_quality_500.py
       - name: Derive original-text gold offsets for Q100, Q40 and Q500 debug QA
-        run: python scripts/build_gold_answer_offsets.py
+        run: |
+          python scripts/build_quality_560_wrapper_stress.py
+          python scripts/build_gold_answer_offsets.py
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
