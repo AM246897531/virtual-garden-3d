@@ -33,7 +33,9 @@ jobs:
         run: python scripts/build_semantic_index.py
       - name: Verify local learned model and search results
         run: python scripts/test_semantic_index.py
-      - name: Build independent original-text gold answer offsets for later debug QA
+      - name: Construct 500 source-grounded questions with honest 140/360 provenance for QA
+        run: python scripts/build_quality_500.py
+      - name: Derive original-text gold offsets for Q100, Q40 and Q500 debug QA
         run: python scripts/build_gold_answer_offsets.py
       - uses: actions/setup-java@v4
         with:
