@@ -238,12 +238,17 @@ internal object SearchLanguage {
     fun analyze(question: String): Analysis {
         val normalized=HebrewSearch.normalize(question.replace("ר״ח", "ראש חודש").replace("ר\"ח", "ראש חודש"))
         val all=normalized.split(' ').filter { it.isNotBlank() }
+        // Intent, negation and condition checks MUST share the same Hebrew
+        // prefix handling; otherwise "ואם" or "וכמה" loses its meaning.
+        fun exactOrPrefixed(token:String, vocabulary:Set<String>):Boolean =
+            token in vocabulary || (token.length>=3 &&
+                token.first() in "ושבהלמכ" && token.drop(1) in vocabulary)
         val intent=when {
-            all.any { it in intentCount } -> Intent.HOW_MANY
-            all.any { it in intentTime } -> Intent.WHEN
-            all.any { it in intentWhere } -> Intent.WHERE
-            all.any { it in intentCondition } -> Intent.CONDITION
-            all.any { it in intentRequire } -> Intent.REQUIREMENT
+            all.any { exactOrPrefixed(it,intentCount) } -> Intent.HOW_MANY
+            all.any { exactOrPrefixed(it,intentTime) } -> Intent.WHEN
+            all.any { exactOrPrefixed(it,intentWhere) } -> Intent.WHERE
+            all.any { exactOrPrefixed(it,intentCondition) } -> Intent.CONDITION
+            all.any { exactOrPrefixed(it,intentRequire) } -> Intent.REQUIREMENT
             else -> Intent.GENERAL
         }
         // A sentence describing that a deadline has ALREADY passed is different
@@ -267,9 +272,6 @@ internal object SearchLanguage {
             .map { HebrewSearch.normalize(it) }.toSet()
         // Hebrew productive one-letter prefixes must not hide a negation:
         // ואין -> ואינ, ואם -> ואמ after the standard final-letter fold.
-        fun exactOrPrefixed(token:String, vocabulary:Set<String>):Boolean =
-            token in vocabulary || (token.length>=3 &&
-                token.first() in "ושבהלמכ" && token.drop(1) in vocabulary)
         val hasNegation=all.any { exactOrPrefixed(it,negationWords) }
         val specificConditionWords=setOf("אם","כאשר","אפילו","למרות",
             "במקרה","מקרה","ספק","שכחתי","שכח","נזכר","איחר",
