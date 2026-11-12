@@ -30,6 +30,8 @@ def main():
             if law not in union:missing.append(i)
         print(f"HOLDOUT40_CHAR_RECALL top={top} char={pure}/40 "
               f"bridged={combined}/40 missing={missing}",flush=True)
+        if top==240:
+            assert combined==40, "Even broad language-to-terminology bridges missed held-out law source"
     print("HOLDOUT40_CHAR_SOURCE_ONLY complete; no end-to-end Top1 test")
 
 if __name__=="__main__":main()
