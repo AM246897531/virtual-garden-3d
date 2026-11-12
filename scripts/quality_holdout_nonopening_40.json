@@ -94,7 +94,7 @@
     "section": "שבת",
     "chapter": 1,
     "law": 6,
-    "highlight_contains": "אף על פי שלא נתכוין לה חייב",
+    "highlight_contains": "אף על פי שלא נתכונ לה חיב",
     "origin": "assistant-authored-reviewed-paraphrase-nonopening",
     "tier": 3
   },
@@ -166,7 +166,7 @@
     "section": "תשובה",
     "chapter": 2,
     "law": 2,
-    "highlight_contains": "שיעזוב החוטא חטאו",
+    "highlight_contains": "ויסירו ממחשבתו ויגמר בלבו",
     "origin": "assistant-authored-reviewed-paraphrase-nonopening",
     "tier": 3
   },
@@ -175,7 +175,7 @@
     "section": "תשובה",
     "chapter": 2,
     "law": 3,
-    "highlight_contains": "לא גמר בלבו לעזוב",
+    "highlight_contains": "לא גמר בלבו לעזב",
     "origin": "assistant-authored-reviewed-paraphrase-nonopening",
     "tier": 3
   },
@@ -184,7 +184,7 @@
     "section": "תלמוד תורה",
     "chapter": 1,
     "law": 2,
-    "highlight_contains": "חייב ללמד את בן בנו",
+    "highlight_contains": "ככ הוא חיב ללמד את בנ בנו",
     "origin": "assistant-authored-reviewed-paraphrase-nonopening",
     "tier": 3
   },
@@ -193,7 +193,7 @@
     "section": "תלמוד תורה",
     "chapter": 1,
     "law": 3,
-    "highlight_contains": "חייב לשכור מלמד לבנו",
+    "highlight_contains": "וחיב לשכר מלמד לבנו",
     "origin": "assistant-authored-reviewed-paraphrase-nonopening",
     "tier": 3
   },
@@ -211,7 +211,7 @@
     "section": "תלמוד תורה",
     "chapter": 1,
     "law": 6,
-    "highlight_contains": "מאימתי אביו חייב ללמדו תורה",
+    "highlight_contains": "מאימתי אביו חיב ללמדו תורה",
     "origin": "assistant-authored-reviewed-paraphrase-nonopening",
     "tier": 3
   },
@@ -220,7 +220,7 @@
     "section": "תפילין ומזוזה וספר תורה",
     "chapter": 1,
     "law": 2,
-    "highlight_contains": "אפילו אות אחת משתי הפרשיות",
+    "highlight_contains": "עד שיהיו שתיהנ נכתבות שלימות",
     "origin": "assistant-authored-reviewed-paraphrase-nonopening",
     "tier": 3
   },
@@ -328,7 +328,7 @@
     "section": "נדרים",
     "chapter": 1,
     "law": 4,
-    "highlight_contains": "שיקיים אדם שבועתו או נדרו",
+    "highlight_contains": "מצות עשה של תורה שיקימ אדמ שבועתו או נדרו",
     "origin": "assistant-authored-reviewed-paraphrase-nonopening",
     "tier": 3
   },
@@ -355,7 +355,7 @@
     "section": "בית הבחירה",
     "chapter": 1,
     "law": 3,
-    "highlight_contains": "נאסרו כל המקומות כולן לבנות בהן בית",
+    "highlight_contains": "נאסרו כל המקומות כלנ לבנות בהנ בית",
     "origin": "assistant-authored-reviewed-paraphrase-nonopening",
     "tier": 3
   }
