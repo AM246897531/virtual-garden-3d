@@ -1,0 +1,75 @@
+name: Real Kotlin Rambam SQL search smoke - Robolectric only, NO APK
+on:
+  push:
+    branches: [feature/mishneh-torah-search-100qa]
+    paths:
+      - app/src/test/java/app/mishnehtorah/RambamRealEngineSmokeTest.kt
+      - scripts/build_semantic_index.py
+      - .github/workflows/mishneh-robolectric-no-apk.yml
+  workflow_dispatch:
+jobs:
+  source-engine-probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 95
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install corpus and tiny Hebrew embedding training prerequisites
+        run: python -m pip install requests==2.32.3 numpy==2.1.3 scipy==1.14.1 gensim==4.4.0 scikit-learn==1.5.2
+      - name: Download and verify authentic Rambam corpus
+        run: python scripts/build_corpus.py
+      - name: Build real source passage FTS SQLite tables
+        run: python scripts/build_passage_index.py
+      - name: Build optional offline char3 retrieval model
+        run: python scripts/build_char_trigram_index.py
+      - name: Train existing local Hebrew semantic model used by Kotlin
+        run: python scripts/build_semantic_index.py
+      - name: Create source-anchored QA500 and original-text offset fixtures
+        run: |
+          python scripts/build_quality_500.py
+          python scripts/build_gold_answer_offsets.py
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Use existing Android SDK (DO NOT install APK/emulator)
+        run: |
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | head -n1)"
+          test -n "$SDKMANAGER"
+          "$SDKMANAGER" --install "platforms;android-35" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+      - name: Test actual Kotlin CorpusStore / SQLite / embeddings in Android JVM shadows
+        run: gradle --no-daemon --console plain :app:testDebugUnitTest --tests app.mishnehtorah.RambamRealEngineSmokeTest
+      - name: Print all available real engine case results
+        if: always()
+        run: |
+          if [ -d app/build/test-results/testDebugUnitTest ]; then
+            grep -rho 'ROBOLECTRIC_REAL_ENGINE[^<]*' app/build/test-results/testDebugUnitTest || true
+          fi
+      - name: Verify NO APK has been assembled or packaged
+        if: always()
+        run: |
+          if find app/build -type f -name '*.apk' -print -quit | grep -q .; then
+            echo "FORBIDDEN: APK generated during source-only analysis" >&2
+            exit 1
+          fi
+          echo "RUNTIME_JVM_SMOKE_APK_CREATED=false"
+      - name: Preserve diagnostic evidence, not an installable build
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Real-Kotlin-Source-Engine-Robolectric-NO-APK
+          path: |
+            app/build/test-results/testDebugUnitTest/
+            app/build/reports/tests/testDebugUnitTest/
+            artifacts/quality_500_description.json
+            artifacts/char3_report.json
+            artifacts/semantic_report.json
+          retention-days: 30
+          if-no-files-found: warn
