@@ -58,7 +58,11 @@ def main():
     print('SEMANTIC_TRAINING',len(data),'docs',len(counts),'terms',flush=True)
     # True learned Hebrew skip-gram embeddings trained in domain. Subword
     # buckets are distilled from these learned vectors for unseen queries.
-    model = Word2Vec(vector_size=DIM, window=6, min_count=2, workers=4,
+    # Multi-worker asynchronous updates make the binary model vary between
+    # otherwise identical CI runs. One worker + fixed seed + PYTHONHASHSEED=0
+    # produces reproducible source rankings and answer-span benchmarks.
+    # Never trade evaluation reproducibility for training throughput.
+    model = Word2Vec(vector_size=DIM, window=6, min_count=2, workers=1,
                      sg=1, negative=5, epochs=9, seed=1729, sample=0.0003)
     model.build_vocab(corpus_iterable=sentences)
     model.train(corpus_iterable=sentences,
@@ -127,6 +131,8 @@ def main():
         'dimensions':DIM,'ngram_buckets':BUCKETS,'vocab_size':len(vocab),
         'indexed_halakhot':len(data),'file_size_bytes':OUT.stat().st_size,
         'offline_inference':True,
+        'training_workers':1,'training_seed':1729,
+        'deterministic_when_pythonhashseed_fixed':True,
         'limitations':'In-domain learned retrieval, not a pretrained large language model or halakhic ruling engine',
     }
     REPORT.parent.mkdir(parents=True,exist_ok=True)
