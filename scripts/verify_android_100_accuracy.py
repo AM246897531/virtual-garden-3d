@@ -35,6 +35,9 @@ def gate(log: str, expected_total: int=100, prefix: str="Q100",
         raise AssertionError("Must have exactly one matching run completion")
     text=segment[:finishes[0].start()]
     summary=finishes[0].group()
+    tail=segment[finishes[0].end():]
+    if re.search(rf"{prefix}_(?:CASE|COMPLETE)\\b",tail):
+        raise AssertionError("Unlinked QA cases or extra completions after final summary")
     case_re=re.compile(
         rf"{prefix}_CASE\s+run_id={re.escape(run_id)}\s+"
         rf"(\d+)/(\d+)\s+(PASS|FAIL)\b[^\n]*")
