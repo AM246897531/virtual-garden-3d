@@ -38,7 +38,9 @@ def focus(question,stop):
         is_question=(suffix.startswith("?") or n.startswith(("מה ","מתי ","האם ","באיזה "))
                      or " שכחתי " in n)
         boilerplate=any(normalize(z) in n for z in (
-            "אני מבקש למצוא","אני מנסה להבין",
+            "אני מבקש למצוא","אני מבקש להבין",
+            "אני מחפש את המקור","אני מנסה להבין",
+            "להסתמך על סיכום",
             "המקור הנכון","ההלכה המדויקת","משנה תורה לרמב"))
         scored.append((meaningful+6*int(is_question)-12*int(boilerplate),index,chunk))
     scored.sort(key=lambda item:(-item[0],item[1]))
