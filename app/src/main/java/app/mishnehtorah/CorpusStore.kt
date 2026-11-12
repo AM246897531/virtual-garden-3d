@@ -210,11 +210,12 @@ class CorpusStore private constructor(
             val focus=preciseSearch.refine(law.text,
                 SearchLanguage.focusedEvidenceQuery(question),
                 pending.start,pending.end,pending.confidence)
+            val exact=AdaptiveSpanRefiner.refine(law.text,question,focus)
             synchronized(highlightCache) {
-                highlightCache[key]=focus
+                highlightCache[key]=exact
                 pendingHighlightHints.remove(key)
             }
-            return focus
+            return exact
         }
         // When a law was opened outside search, run content-only matching with
         // the original passage finder; never use a predetermined source hint.
@@ -223,8 +224,9 @@ class CorpusStore private constructor(
             ?: SearchLanguage.sourceVocabularyBridges(question).firstNotNullOfOrNull { bridge ->
                 RelevantPassage.find(law.text, bridge, "", semantic)
             }
-        synchronized(highlightCache) { highlightCache[key] = passage }
-        return passage
+        val exact=AdaptiveSpanRefiner.refine(law.text,question,passage)
+        synchronized(highlightCache) { highlightCache[key] = exact }
+        return exact
     }
 
     /** Search actual passages, then open the corresponding *verbatim* law. */
@@ -246,8 +248,9 @@ class CorpusStore private constructor(
                 // synchronous refinement pass over every offscreen card.
                 val focus=preciseSearch.refine(law.text,evidenceQuestion,
                     hit.start,hit.end,hit.confidence)
+                val exact=AdaptiveSpanRefiner.refine(law.text,input,focus)
                 synchronized(highlightCache) {
-                    highlightCache[key]=focus
+                    highlightCache[key]=exact
                     pendingHighlightHints.remove(key)
                 }
             } else {
