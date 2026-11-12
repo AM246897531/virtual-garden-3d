@@ -8,6 +8,8 @@ on:
       - app/src/test/java/app/mishnehtorah/RambamHighlightAblationTest.kt
       - app/src/test/java/app/mishnehtorah/RambamHighlightDiagnosticTest.kt
       - app/src/test/java/app/mishnehtorah/RambamRankingWeightAblationTest.kt
+      - app/src/main/java/app/mishnehtorah/PreciseEvidenceSearch.kt
+      - app/src/main/java/app/mishnehtorah/CorpusStore.kt
       - scripts/build_semantic_index.py
       - .github/workflows/mishneh-robolectric-no-apk.yml
   workflow_dispatch:
@@ -48,13 +50,13 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.10.2'
-      - name: Compare 12 source evidence weight profiles on 100+40 real Kotlin searches, NO APK
-        run: gradle --no-daemon --console plain :app:testDebugUnitTest --tests app.mishnehtorah.RambamRankingWeightAblationTest
+      - name: Strict authentic 500-case Kotlin source and answer-span acceptance (NO APK)
+        run: gradle --no-daemon --console plain :app:testDebugUnitTest --tests app.mishnehtorah.RambamRealEngine500Test
       - name: Print all available real engine case results
         if: always()
         run: |
           if [ -d app/build/test-results/testDebugUnitTest ]; then
-            grep -rho 'REAL_KOTLIN_RANK_WEIGHT_RESULT[^<]*' app/build/test-results/testDebugUnitTest | tail -n 20 || true
+            grep -rho 'REAL_KOTLIN_ROBOLECTRIC_Q500_SUMMARY[^<]*' app/build/test-results/testDebugUnitTest | tail -n 5 || true
           fi
       - name: Verify NO APK has been assembled or packaged
         if: always()
