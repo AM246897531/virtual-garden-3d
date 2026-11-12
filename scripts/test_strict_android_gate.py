@@ -5,16 +5,20 @@ from verify_android_100_accuracy import gate
 def simulated(total,prefix,run_id="123456"):
     lines=[f"{prefix}_BEGIN run_id={run_id} total={total}"]
     for i in range(1,total+1):
+        cohort=("synthetic" if i>140 else "reviewed")
         lines.append(
             f"{prefix}_CASE run_id={run_id} {i}/{total} PASS "
-            "tier=3 top=Test expected=Test passage=true anchor=true "
+            f"tier=3 top=Test expected=Test cohort={cohort} passage=true anchor=true "
             "goldCoverage=1.0 highlightPrecision=0.5 "
             "spanLength=42 elapsed_ms=120 excerpt=Source"
         )
+    cohorts=(" reviewedTotal=140 reviewedTop1=140 reviewedHighlights=140 "
+             "syntheticTotal=360 syntheticTop1=360 syntheticHighlights=360"
+             if prefix=="Q500" else "")
     lines.append(f"{prefix}_COMPLETE run_id={run_id} "
                  f"passed={total} total={total} highlighted={total} "
                  f"verifiedAnchors={total} goldAnchors={total} "
-                 "median_ms=120 p95_ms=300 max_ms=390")
+                 "median_ms=120 p95_ms=300 max_ms=390"+cohorts)
     return "\n".join(lines)
 
 def must_reject(log,total=100,prefix="Q100"):
@@ -31,6 +35,11 @@ def main():
     must_reject(simulated(500,"Q500").replace(
         "Q500_CASE run_id=123456 250/500 PASS",
         "Q500_CASE run_id=123456 250/500 FAIL",1),500,"Q500")
+    must_reject(simulated(500,"Q500").replace(
+        "syntheticTotal=360","syntheticTotal=359",1),500,"Q500")
+    must_reject(simulated(500,"Q500").replace(
+        "250/500 PASS tier=3","250/500 PASS tier=3",1
+    ).replace("cohort=synthetic","cohort=reviewed",1),500,"Q500")
     must_reject(normal.replace("1/100 PASS","1/100 FAIL",1))
     must_reject(normal.replace("goldCoverage=1.0","goldCoverage=0.80",1))
     must_reject(normal.replace("highlightPrecision=0.5","highlightPrecision=0.1",1))
@@ -50,6 +59,6 @@ def main():
     try:gate(normal,100,"Q100",max_p95_ms=200)
     except AssertionError:pass
     else:raise AssertionError("Accepted search latency over specified cap")
-    print("STRICT_QA_GATE_STATIC_TESTS_PASS examples=17 no_actual_device_test=True")
+    print("STRICT_QA_GATE_STATIC_TESTS_PASS examples=19 no_actual_device_test=True")
 
 if __name__=="__main__":main()
