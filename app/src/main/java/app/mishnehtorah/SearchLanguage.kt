@@ -7,7 +7,8 @@ internal object SearchLanguage {
     internal data class Term(val word: String, val alternatives: List<String>, val weight: Float = 1f)
     internal data class Analysis(val terms: List<Term>, val intent: Intent, val normalized: String,
         val deadlineOverrun: Boolean = false,
-        val hasNegation: Boolean = false)
+        val hasNegation: Boolean = false,
+        val asksSpecificCase: Boolean = false)
     internal enum class Intent { GENERAL, WHEN, WHERE, HOW_MANY, REQUIREMENT, CONDITION }
 
     private val stop = setOf(
@@ -259,6 +260,11 @@ internal object SearchLanguage {
         // letter lexical word. Preserve it separately from stopword removal.
         val hasNegation=Regex("(^| )(לא|בלי|ללא|אינו|אינה|אינני|שלא|אין|אינן)( |$)")
             .containsMatchIn(normalized)
+        val specificConditionWords=setOf("אם","כאשר","אפילו","למרות",
+            "במקרה","מקרה","ספק","שכחתי","שכח","נזכר","איחר",
+            "פספס","תנאי","בתנאי","קרה")
+        val asksSpecificCase=all.any { it in specificConditionWords ||
+            (it.length>=4 && it.startsWith("כש")) }
         val nonJewish=normalized.contains("אינו יהודי") || normalized.contains("לא יהודי")
         val discourseLead=normalized.startsWith("אני רוצה לברר") ||
             normalized.startsWith("אני רוצה לדעת") ||
@@ -335,7 +341,8 @@ internal object SearchLanguage {
         }
         if (nonJewish && result.size<16) result.add(
             Term("עכומ",listOf("עכומ","נכרי","גוי","עובדכוכבימ"),1.2f))
-        return Analysis(result,intent,normalized,deadlineOverrun,hasNegation)
+        return Analysis(result,intent,normalized,deadlineOverrun,hasNegation,
+            asksSpecificCase)
     }
 
     /**
