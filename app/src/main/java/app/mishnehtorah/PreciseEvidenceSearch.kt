@@ -773,20 +773,46 @@ internal class PreciseEvidenceSearch(
             introduction.startsWith("כיצד ")
         if (introductoryQuestion && overlaps(clause(0))) {
             val start = clauses[1].first
+            val second=clause(1)
+            val amountWords=setOf("אחד","אחת","שני","שנים","שתים",
+                "שלשה","שלוש","ארבע","חמש","שש","שבע","שמונה",
+                "תשע","עשר","עשרים","מאה","אלף")
+                .map { HebrewSearch.normalize(it) }.toSet()
+            val tokens=Regex("[\\p{L}\\p{M}]+").findAll(second).toList()
+            val firstAmount=tokens.indexOfFirst {
+                HebrewSearch.normalize(it.value) in amountWords
+            }
+            if (firstAmount>=0 && normalizedQuestion.contains("כמה")) {
+                // Short numeric answers such as "תשע תקיעות" must not be
+                // inflated with the next explanatory paragraph: the source
+                // already states the quantity in this very clause.
+                val last=minOf(tokens.lastIndex,firstAmount+3)
+                val exactEnd=start+tokens[last].range.last+1
+                return PassageMatch(start, minOf(exactEnd,clauses[1].second),
+                    confidence)
+            }
             val end = if (clauses.size >= 3 && clauses[1].second-start < 100)
                 clauses[2].second else clauses[1].second
             return PassageMatch(start, minOf(end, start+320), confidence)
         }
         val listAsked = normalizedQuestion.contains("כמה") ||
-            normalizedQuestion.contains("מהם") || normalizedQuestion.contains("מה הם")
+            normalizedQuestion.contains("מהם") || normalizedQuestion.contains("מה הם") ||
+            normalizedQuestion.contains("איזה") || normalizedQuestion.contains("אילו")
         if (listAsked) {
             val at = (1 until minOf(clauses.size,5)).firstOrNull { i ->
-                HebrewSearch.normalize(clause(i)).contains("ואלו הן")
+                val words=HebrewSearch.normalize(clause(i))
+                listOf("ואלו הן","והן","הן","ואלו").any {
+                    words.contains(HebrewSearch.normalize(it))
+                }
             }
             if (at != null && overlaps(clause(at-1)+clause(at))) {
                 val start = clauses[at].first
-                return PassageMatch(start, minOf(clauses[minOf(at+2,clauses.lastIndex)].second,
-                    start+320),confidence)
+                // Rambam often enumerates four or more items as separate
+                // clauses. Include the list through its fourth item rather
+                // than only its heading and first two names.
+                return PassageMatch(start, minOf(
+                    clauses[minOf(at+5,clauses.lastIndex)].second,
+                    start+260),confidence)
             }
         }
         val uncertaintyAsked = normalizedQuestion.contains("לא בטוח") ||
@@ -856,6 +882,10 @@ internal class PreciseEvidenceSearch(
         // Select a real answer clause when the source explicitly separates
         // a question/definition/list/uncertainty from its explanation.
         overdueDecisionSpan(text,query,confidence)?.let { return it }
+        // Prefer explicit source answer clauses (a question followed by an
+        // exact count, or a Rambam list) before lexical bridge windows which
+        // may match later explanations instead of the actual answer.
+        grammaticalAnswerClause(text,query,confidence)?.let { return it }
         // The same source-vocabulary bridge that recovered a classical law
         // from the user's modern expression may be needed to locate the
         // actual answer within that law. Choose only original-text windows
@@ -869,7 +899,6 @@ internal class PreciseEvidenceSearch(
             if (end-start<text.length && text.length<=5000)
                 tokenWindowEvidence(text,expansion,0,text.length,confidence)?.let { return it }
         }
-        grammaticalAnswerClause(text, query, confidence)?.let { return it }
         val analysis=SearchLanguage.analyze(query)
         val initial=text.substring(start,end)
         if (initial.length<=125 || analysis.terms.isEmpty())
