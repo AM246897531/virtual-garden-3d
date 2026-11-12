@@ -21,6 +21,19 @@ internal class PreciseEvidenceSearch(
 ) {
     internal data class Hit(val lawId: Int, val start: Int, val end: Int,
                             val confidence: Float, val matched: Int, val coverage: Float)
+
+    /**
+     * Source-only quantitative A/B controls. Defaults preserve production
+     * ranking EXACTLY. JVM tests can change a weight, rank real results, and
+     * restore the defaults without shipping gold labels or trained constants.
+     */
+    internal data class RankingWeights(
+        val sectionScale: Float = 1f,
+        val chapterScale: Float = 1f,
+        val charScale: Float = 1f,
+        val openingScale: Float = 1f
+    )
+    @Volatile internal var rankingWeights = RankingWeights()
     private data class Passage(val id: Int, val lawId: Int,
                                val start: Int, val end: Int, val norm: String)
     private val totalPassages = 1f // Actual count is read from the index.
@@ -560,6 +573,7 @@ internal class PreciseEvidenceSearch(
         val focused=SearchLanguage.focusedEvidenceQuery(query)
         val analysis=SearchLanguage.analyze(focused)
         if (analysis.terms.isEmpty()) return emptyList()
+        val tune=rankingWeights
         val started=android.os.SystemClock.elapsedRealtime()
         val weights=FloatArray(analysis.terms.size) { weight(analysis.terms[it]) }
         val aliases=proximityAliases(analysis)
@@ -653,8 +667,9 @@ internal class PreciseEvidenceSearch(
             if (!directSupported && !bridgeSupported) continue
             val sectionBonus=sectionBoostCache.getOrPut(sec) {
                 (affinities[sec]?:0f)*40f+sectionTitleBoost(sec,analysis)
-            }
-            val chapterBonus=chapterBonuses[sec to (lawChapters[passage.lawId]?:0)]?:0f
+            } * tune.sectionScale
+            val chapterBonus=(chapterBonuses[sec to (lawChapters[passage.lawId]?:0)]?:0f) *
+                tune.chapterScale
             // Definition/overview questions usually begin at the chapter's
             // introductory source. This small prior never overrides direct
             // evidence for a specific exception, deadline, or condition.
@@ -666,12 +681,12 @@ internal class PreciseEvidenceSearch(
                 (analysis.intent==SearchLanguage.Intent.GENERAL ||
                  analysis.intent==SearchLanguage.Intent.REQUIREMENT)
             val sourceOpeningBonus=if (overview &&
-                lawOrdinals[passage.lawId]==1) 4f else 0f
+                lawOrdinals[passage.lawId]==1) 4f*tune.openingScale else 0f
             // A small independent text-similarity corroboration helps break
             // ties; exact source evidence still dominates the 110-point
             // concept coverage score. New route may be disabled by not
             // packaging its asset on older installations.
-            val charBonus=(characterScores[passage.lawId] ?: 0f) * 14f
+            val charBonus=(characterScores[passage.lawId] ?: 0f) * 14f * tune.charScale
             val rankedEvidence=score.copy(
                 score=score.score+sectionBonus+chapterBonus+sourceOpeningBonus+charBonus)
             val old=accepted[passage.lawId]
