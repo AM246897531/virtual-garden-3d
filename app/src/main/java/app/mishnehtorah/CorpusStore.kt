@@ -180,6 +180,12 @@ class CorpusStore private constructor(
     }
 
     private val preciseSearch = PreciseEvidenceSearch(db, semantic, characterIndex)
+    /** Test-only caller: the released engine always uses the unchanged defaults. */
+    internal fun setExperimentalRankingWeights(
+        weights: PreciseEvidenceSearch.RankingWeights
+    ) {
+        preciseSearch.rankingWeights=weights
+    }
     private val highlightCache = object : LinkedHashMap<String, PassageMatch?>(180, .75f, true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, PassageMatch?>?) =
             size > 180
