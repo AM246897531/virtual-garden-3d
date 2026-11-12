@@ -1,4 +1,4 @@
-name: Verify natural-source QA and optional Hebrew rerankers (NO APK)
+name: Verify source QA + held-out Hebrew E5 experiment (NO APK)
 on:
   push:
     branches: [feature/mishneh-torah-search-100qa]
