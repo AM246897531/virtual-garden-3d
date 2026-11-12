@@ -99,7 +99,15 @@ def main():
         top=[r[0] for r in ranked]
         top1=bool(top and top[0]==gold)
         rank=top.index(gold)+1 if gold in top else None
+        # Independent candidate routes always run without looking at gold.
+        # Do NOT confuse union recall with rank #1 or highlighted answer.
+        bridge_candidates=set(top[:240])
+        for expanded in bridges(case["question"]):
+            bridge_candidates.update(law_id for law_id,_ in ranked_char(
+                model,expanded,240))
+        bridge_present=gold in bridge_candidates
         stats=cohorts[origin]
+        stats["candidate_union_240"]+=bridge_present
         stats["total"]+=1
         for k in (1,5,20,80,240,500):
             stats[f"hit_{k}"]+=bool(rank is not None and rank<=k)
@@ -127,6 +135,7 @@ def main():
         detail.append({"case":i,"origin":origin,
             "top1_source_correct":top1,
             "gold_source_rank":rank,
+            "candidate_union_240":bridge_present,
             "gold_span_matched":highlight_pass,
             "gold_coverage":round(gold_coverage,3),
             "gold_precision":round(span_precision,3)})
@@ -156,6 +165,10 @@ def main():
         ]
     },indent=2,ensure_ascii=False)+"\n")
     assert combined["total"]==500
+    assert combined["candidate_union_240"]==500, (
+        "Source-only 500 gold candidate retrieval incomplete: "+
+        str(combined["candidate_union_240"])+"/500"
+    )
     print("QA500_BASELINE_REPORTED no_apk=True not_100_percent_claim=True")
 
 if __name__=="__main__":main()
