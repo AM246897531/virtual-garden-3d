@@ -91,7 +91,12 @@ fun RambamApp(initialQuery: String = "", debugTypeahead: Boolean = false,
         bookmarks.clear()
         bookmarks.addAll(prefs.getStringSet("bookmarks", emptySet())!!.mapNotNull { it.toIntOrNull() })
         try {
-            store = CorpusStore.open(context)
+            // Offline DB validation, model loading and optional 15MB index
+            // parsing must never block the Compose UI during cold launch.
+            val loaded=withContext(Dispatchers.IO) {
+                CorpusStore.open(context.applicationContext)
+            }
+            store=loaded
         } catch (ex: Exception) {
             loadingError = ex.message ?: "טעינת ספריית הרמב״ם נכשלה"
         }
