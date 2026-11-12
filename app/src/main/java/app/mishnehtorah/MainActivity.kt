@@ -697,8 +697,10 @@ private fun ReaderPage(
             HighlightedRambamText(law.text, passage, fontSize = fontSize,
                 lineHeight = fontSize * 1.65f,
                 onLayout = { layout ->
-                    if (passage != null && passage.start in law.text.indices) {
-                        passageTop = layout.getBoundingBox(passage.start).top
+                    val resolvedPassage = passage
+                    if (resolvedPassage != null &&
+                        resolvedPassage.start in law.text.indices) {
+                        passageTop = layout.getBoundingBox(resolvedPassage.start).top
                     }
                 })
             if (passage != null) {
