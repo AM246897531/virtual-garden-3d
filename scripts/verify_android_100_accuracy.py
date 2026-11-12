@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """Strict real-device accuracy gate for an EXACT single Android QA execution.
 
-Supports Q100 (100 free-form cases) and Q40 (40 non-opening, reviewed cases).
+Supports Q100, Q40 and Q500, with the latter containing 140 existing
+free-form and 360 explicitly source-derived synthetic questions.
 Never combine cases across runs, ignore missing metrics, or treat an in-bounds
 highlight as a correct source answer. No APK compilation occurs here.
 
 Example after an independently authorized device test:
     python scripts/verify_android_100_accuracy.py adb.log
     python scripts/verify_android_100_accuracy.py adb.log --prefix Q40 --total 40
+    python scripts/verify_android_100_accuracy.py adb.log --prefix Q500 --total 500
 """
 from __future__ import annotations
 import argparse
@@ -18,7 +20,7 @@ from pathlib import Path
 
 def gate(log: str, expected_total: int=100, prefix: str="Q100",
          max_p95_ms: int | None=None) -> dict:
-    if not re.fullmatch(r"Q(?:40|100)",prefix):
+    if not re.fullmatch(r"Q(?:40|100|500)",prefix):
         raise AssertionError(f"Unsupported strict test prefix {prefix!r}")
     start_re=re.compile(rf"{prefix}_BEGIN\s+run_id=(\d+)\s+total=(\d+)")
     begins=list(start_re.finditer(log))
@@ -94,11 +96,13 @@ def gate(log: str, expected_total: int=100, prefix: str="Q100",
 def main() -> int:
     p=argparse.ArgumentParser()
     p.add_argument("log",type=Path)
-    p.add_argument("--prefix",choices=["Q100","Q40"],default="Q100")
+    p.add_argument("--prefix",choices=["Q100","Q40","Q500"],default="Q100")
     p.add_argument("--total",type=int,default=None)
     p.add_argument("--max-p95-ms",type=int,default=None)
     args=p.parse_args()
-    total=args.total if args.total is not None else (40 if args.prefix=="Q40" else 100)
+    total=args.total if args.total is not None else (
+        40 if args.prefix=="Q40" else 500 if args.prefix=="Q500" else 100
+    )
     try:
         r=gate(args.log.read_text(encoding="utf-8",errors="replace"),
                total,args.prefix,args.max_p95_ms)
