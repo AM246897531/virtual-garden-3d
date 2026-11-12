@@ -55,11 +55,11 @@ jobs:
       - name: Derive 100 exact answer-phrase locations in original UTF-16 texts
         run: python scripts/build_gold_answer_offsets.py
       - name: Experimental Hebrew E5 model dependencies (explicit opt-in commit only)
-        if: contains(github.event.head_commit.message, '[run-e5]') || contains(github.event.head_commit.message, '[run-cross]') || contains(github.event.head_commit.message, '[run-cross]')
+        if: contains(github.event.head_commit.message, '[run-e5]') || contains(github.event.head_commit.message, '[run-cross]')
         run: |
           python -m pip install 'sentence-transformers>=3.4,<6' 'scikit-learn>=1.5,<2'
       - name: Benchmark pretrained small Hebrew E5 against 100 labeled sources (NO APK)
-        if: contains(github.event.head_commit.message, '[run-e5]')
+        if: contains(github.event.head_commit.message, '[run-e5]') || contains(github.event.head_commit.message, '[run-cross]')
         continue-on-error: true
         env:
           HEBREW_EMBED_MODEL: alphaedge-ai/multilingual-e5-small-heb-32768
