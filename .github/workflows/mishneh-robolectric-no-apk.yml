@@ -6,6 +6,9 @@ on:
       - app/src/test/java/app/mishnehtorah/RambamRealEngineSmokeTest.kt
       - app/src/test/java/app/mishnehtorah/RambamRankingAblationTest.kt
       - app/src/test/java/app/mishnehtorah/RambamHighlightAblationTest.kt
+      - app/src/test/java/app/mishnehtorah/RambamMetamorphic560Test.kt
+      - scripts/build_quality_560_wrapper_stress.py
+      - scripts/build_gold_answer_offsets.py
       - app/src/test/java/app/mishnehtorah/RambamHighlightDiagnosticTest.kt
       - app/src/test/java/app/mishnehtorah/RambamRankingWeightAblationTest.kt
       - app/src/test/java/app/mishnehtorah/RambamEvidenceGateAblationTest.kt
@@ -38,9 +41,10 @@ jobs:
         run: python scripts/build_char_trigram_index.py
       - name: Train existing local Hebrew semantic model used by Kotlin
         run: python scripts/build_semantic_index.py
-      - name: Create source-anchored QA500 and original-text offset fixtures
+      - name: Create Q500 plus 560 invariant Hebrew question wrappers with original-text gold offsets
         run: |
           python scripts/build_quality_500.py
+          python scripts/build_quality_560_wrapper_stress.py
           python scripts/build_gold_answer_offsets.py
       - uses: actions/setup-java@v4
         with:
@@ -54,13 +58,13 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.10.2'
-      - name: A/B adaptive turquoise source-span refinement on 500 real Kotlin source questions, no APK
-        run: gradle --no-daemon --console plain :app:testDebugUnitTest --tests app.mishnehtorah.RambamHighlightAblationTest
+      - name: Test 560 semantically neutral Hebrew wrappers against real Kotlin source and answer spans, NO APK
+        run: gradle --no-daemon --console plain :app:testDebugUnitTest --tests app.mishnehtorah.RambamMetamorphic560Test
       - name: Print all available real engine case results
         if: always()
         run: |
           if [ -d app/build/test-results/testDebugUnitTest ]; then
-            grep -rho 'KOTLIN_HIGHLIGHT_ABLATION_RESULT[^<]*' app/build/test-results/testDebugUnitTest | tail -n 20 || true
+            grep -rho 'REAL_KOTLIN_METAMORPHIC_Q560_SUMMARY[^<]*' app/build/test-results/testDebugUnitTest | tail -n 5 || true
           fi
       - name: Verify NO APK has been assembled or packaged
         if: always()
