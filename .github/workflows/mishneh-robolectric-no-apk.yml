@@ -43,6 +43,10 @@ jobs:
       - name: Build optional offline char3 retrieval model
         run: python scripts/build_char_trigram_index.py
       - name: Train existing local Hebrew semantic model used by Kotlin
+        env:
+          PYTHONHASHSEED: '0'
+          OPENBLAS_NUM_THREADS: '1'
+          OMP_NUM_THREADS: '1'
         run: python scripts/build_semantic_index.py
       - name: Create Q500 plus 560 invariant Hebrew question wrappers with original-text gold offsets
         run: |
