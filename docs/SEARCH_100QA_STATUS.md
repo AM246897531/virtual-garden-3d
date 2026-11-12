@@ -1,7 +1,7 @@
 # Mishneh Torah natural-language search — QA status (11 Nov 2026)
 
 ## Scope and safety
-This is a **source-only development branch**. It is not a release and must not be merged as a verified 100/100 solution. The user instructed **DO NOT COMPILE AN APK YET**. The original APK workflow is restricted to another branch; the workflow here is explicitly Python-only.
+This is a **source-only development branch**. It is not a release and must not be merged as a verified 100/100 solution. The user instructed **DO NOT COMPILE AN APK YET**. **Kotlin typechecking and Robolectric JVM unit tests are allowed here; neither packages an APK.** The original APK workflow is restricted to another branch; the current branch runs Python QA plus Kotlin/JVM source-only tests without Android APK assembly.
 
 ## Ground truth that has actually been verified
 - 100 unique, tiered free-form Hebrew questions, including 20 new complex conversational paraphrases.
@@ -103,3 +103,32 @@ The user authorized exploring smaller local models and auxiliary open-licensed l
 - Source-only fallback highlighting was improved further: when the main query has no direct match in a source law, bridge vocabulary can help select a real verbatim passage even if the search highlight cache is empty. This code remains **uncompiled** per user requirement.
 
 **The key unsolved question is now precision ranking, not raw candidate coverage. Never silently count 100/100 candidate recall as 100/100 user-facing search results.**
+
+
+## 12 November 2026 — real Kotlin JVM execution without APK
+
+**This section supersedes earlier references to this branch being Python-only or not Kotlin-compiled.** The user's prohibition is on a new **APK**; the isolated branch uses **Kotlin source compilation, JVM tests and Robolectric Android framework shadows**, not `assembleDebug` and not Android packaging, installation or distribution.
+
+### Reproducible CI and artifacts
+- GitHub repo: `AM246897531/virtual-garden-3d`; experimental branch `feature/mishneh-torah-search-100qa`. Do not merge into the APK-build branch without explicit user authorization.
+- Real Android/Kotlin **typechecking** succeeded: [Actions 43192736354](https://github.com/AM246897531/virtual-garden-3d/actions/runs/43192736354). An actual Kotlin compiler previously found and prompted fixes for two illegal Compose delegated-property smart casts in `MainActivity.kt`, missed by tree-sitter syntax checks.
+- Real JVM Hebrew query tests: `app/src/test/java/app/mishnehtorah/HebrewQueryRegressionTest.kt`, in `.github/workflows/mishneh-kotlin-typecheck-only.yml`. They detected a bug in normalized Hebrew forms `אם`→`אמ` and `אין`→`אינ`; it was corrected, including prefixed `ואם` and `ואין`. Do not confuse a language-test pass with retrieval accuracy.
+- Successfully launched **real** `CorpusStore.search`, `PreciseEvidenceSearch`, `SemanticIndex`, `CharTrigramIndex` and actual source-offset `relevantPassage` in **Robolectric Android JVM** using the complete generated SQLite corpus, no APK: [Actions 43194392361](https://github.com/AM246897531/virtual-garden-3d/actions/runs/43194392361). The first ten strategically sampled natural questions returned **4/10 correct Top-1 sources, 3/10 also containing the expected answer phrase**, and 10/10 spans were within legal text bounds. These numbers are a small diagnostic sample and show the new Kotlin implementation is **not yet accurate**.
+- Test class: `RambamRealEngineSmokeTest.kt`, with `org.robolectric:robolectric:4.14` and API 35/JDK17, plus independently compiled test `RambamRealEngine500Test.kt`. Workflow `.github/workflows/mishneh-robolectric-no-apk.yml` now runs **strict 500-case actual Kotlin** tests, captures original UTF-16 gold-span overlap, per-cohort metrics and latency, and checks no `*.apk` was produced.
+- Real Kotlin 500 test is run through [Actions 43195016714](https://github.com/AM246897531/virtual-garden-3d/actions/runs/43195016714); **read actual results and CI conclusion**, do not assume it passed. Even a 500/500 test result would require diverse independently authored questions and real-device verification before a universal claim.
+
+### Ground truth, biases and ongoing bottleneck
+- `scripts/build_quality_500.py` produces **140 pre-existing free-form questions + 360 transparent source-derived synthetic cases** from 77 topic areas, 412 non-opening laws. A 500/500 integrity result is not 500 independent paraphrased questions.
+- Binary char3 index + topical bridges achieved **500/500 candidate recall**, not Top-1. A separate Python char-only approximation measured **395/500 Top-1** and **364/500 original-phrase overlap**, but 359/360 synthetic sources were trivially literal, while just **36/140** manually authored sources were Top-1 and **11/140** had acceptable overlapping highlights. NEVER use these as Kotlin runtime results.
+- External E5 bilingual retrieval on the 100-case set: **29/100 Top-1 standalone**, **41/100 with lexical**; **12/40** first-ranked on 40 newly authored non-opening queries. A separate 141M ONNX cross-encoder obtained **62/100 Top-1** but around **5.4s median** CPU candidate re-ranking in its Python experiment; it was not added to the Android app.
+- Small LightGBM law rankers trained on the original 100 overfit badly (often 90%+ train vs 0–13% held-out Top-1); **never deploy based on training accuracy**.
+- Experimental source-span ranker trained on 100 source-grounded cases selected an anchor-overlapping window in **21–23/40** held-out cases *when supplied the correct law*. This is not Android search accuracy, and remains unintegrated pending actual-engine A/B.
+- Gold `quality_500_gold.json` is generated into `app/src/debug/assets/` with 500 original Unicode/UTF-16 source offsets. `MainActivity` has a `debug_quality_500` switch and output cohort counts for reviewed 140 versus synthetic 360, and `scripts/verify_android_100_accuracy.py` checks one-run strict Top-1 plus >=90% gold overlap and >=20% highlight precision; a passing source-derived suite must never be described as universal 100% understanding.
+
+### Next work required
+1. Collect ALL real Kotlin Q500 results from the Robolectric workflow, especially the **140 non-synthetic cases**, and failures grouped by Top-1 versus source-correct/answer-wrong. Preserve exact results, don't extrapolate success from candidate pool.
+2. Improve cross-law evidence ranking and highlight selection generically using only source text and query semantics, without embedding benchmark law IDs or target answer phrases in production logic. Repeat **real Kotlin JVM** QA after changes, not only Python proxies.
+3. Add multiple independently authored adversarial questions with non-first-law correct answers, ambiguous subjects, negations, delayed conditions, and explicit conflicting alternatives.
+4. Measure actual on-device median/p95, crashes, memory and UI highlights after the user explicitly authorizes building an APK. Continue to honor the current no-APK constraint.
+
+**Not completed**: 500/500 Top-1 and 500/500 truly precise turquoise answers in the real app; not a verified release.
