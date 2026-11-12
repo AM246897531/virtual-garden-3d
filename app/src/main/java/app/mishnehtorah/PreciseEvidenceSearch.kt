@@ -591,7 +591,14 @@ internal class PreciseEvidenceSearch(
         // Orthogonal source-only character candidate route. This returns
         // literal document similarities, never a fabricated answer.
         val characterNearest=characterIndex?.nearest(query,240).orEmpty()
-        val characterScores=characterNearest.toMap()
+        // A long conversational preamble must not dilute source similarity.
+        // Retain the raw-query candidates for recall, but use the factual
+        // clauses for ranking and retrieve the independent focused candidates.
+        // Short questions are unaffected (focused == query).
+        val focusedCharacterNearest=if (focused!=query)
+            characterIndex?.nearest(focused,240).orEmpty()
+            else characterNearest
+        val characterScores=focusedCharacterNearest.toMap()
         // Topic-vocabulary expansions are an independent recall route,
         // never a replacement for the user's original question.
         val bridgeQueries=SearchLanguage.sourceVocabularyBridges(query)
@@ -615,6 +622,7 @@ internal class PreciseEvidenceSearch(
         val lexicalCount=ids.size
         addSemanticPassages(nearest,ids)
         addSemanticPassages(characterNearest,ids)
+        if (focused!=query) addSemanticPassages(focusedCharacterNearest,ids)
         addSemanticPassages(bridgeNearest,ids)
         addSemanticPassages(segmentNearest,ids)
         val passages=loadPassages(ids)
