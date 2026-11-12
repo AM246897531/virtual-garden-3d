@@ -261,8 +261,9 @@ internal object SearchLanguage {
         // HebrewSearch.normalize converts final consonants, including
         // אם -> אמ and אין -> אינ. Every comparison MUST run through the
         // same normalizer, or real conditional/negative questions are lost.
-        val negationWords=setOf("לא","בלי","ללא","אינו","אינה",
-            "אינני","שלא","אין","אינן")
+        val negationWords=setOf("לא","בלי","ללא","בלתי",
+            "אינו","אינה","אינם","אינן","איננו","אינני",
+            "אינכם","שלא","אין")
             .map { HebrewSearch.normalize(it) }.toSet()
         // Hebrew productive one-letter prefixes must not hide a negation:
         // ואין -> ואינ, ואם -> ואמ after the standard final-letter fold.
