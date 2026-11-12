@@ -1,4 +1,4 @@
-name: Verify 100 free-form gold sources (PYTHON ONLY - NO APK BUILD)
+name: Verify natural-source QA and optional Hebrew rerankers (NO APK)
 on:
   push:
     branches: [feature/mishneh-torah-search-100qa]
