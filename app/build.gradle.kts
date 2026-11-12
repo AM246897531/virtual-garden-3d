@@ -17,6 +17,18 @@ android {
         release { isMinifyEnabled = false }
     }
     buildFeatures { compose = true }
+    // JVM Robolectric tests read the ORIGINAL corpus and exercise the REAL
+    // Android SQLite + scoring engine without an emulator or packaging an APK.
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+            all {
+                it.jvmArgs("--add-opens=java.base/java.lang=ALL-UNNAMED")
+                it.jvmArgs("--add-opens=java.base/java.io=ALL-UNNAMED")
+                it.jvmArgs("--add-opens=java.base/java.util=ALL-UNNAMED")
+            }
+        }
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -35,4 +47,6 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
     debugImplementation("androidx.compose.ui:ui-tooling")
     testImplementation("junit:junit:4.13.2")
+    // Robolectric 4.14 matches Gradle 8.10 / AGP 8.7 and Android API 35.
+    testImplementation("org.robolectric:robolectric:4.14")
 }
