@@ -30,6 +30,10 @@ jobs:
       - name: Verify character index and natural-language candidate recall
         run: python scripts/test_char_trigram_100.py
       - name: Train and package tiny 100-percent-offline Hebrew embedding model
+        env:
+          PYTHONHASHSEED: '0'
+          OPENBLAS_NUM_THREADS: '1'
+          OMP_NUM_THREADS: '1'
         run: python scripts/build_semantic_index.py
       - name: Verify local learned model and search results
         run: python scripts/test_semantic_index.py
