@@ -22,6 +22,9 @@ SUITES=(
     (500,ROOT/"artifacts/quality_500_gold.json",
          ROOT/"app/src/debug/assets/quality_500_gold.json",
          ROOT/"artifacts/gold_answer_offsets_500.json"),
+    (560,ROOT/"artifacts/quality_560_wrapper_stress.json",
+         ROOT/"app/src/debug/assets/quality_560_wrapper_stress.json",
+         ROOT/"artifacts/gold_answer_offsets_560.json"),
 )
 FINAL_FOLD=str.maketrans("ךםןףץ","כמנפצ")
 
