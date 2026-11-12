@@ -60,13 +60,13 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.10.2'
-      - name: A/B authentic Hebrew semantic and lexical answer-span selection on 500 Kotlin source cases, NO APK
-        run: gradle --no-daemon --console plain :app:testDebugUnitTest --tests app.mishnehtorah.RambamSemanticSpanAblationTest
+      - name: Strict Kotlin Q560 conversational resilience after factual clause isolation, NO APK
+        run: gradle --no-daemon --console plain :app:testDebugUnitTest --tests app.mishnehtorah.RambamMetamorphic560Test
       - name: Print all available real engine case results
         if: always()
         run: |
           if [ -d app/build/test-results/testDebugUnitTest ]; then
-            grep -rho 'SEMANTIC_SPAN_ABLATION_RESULT[^<]*' app/build/test-results/testDebugUnitTest | tail -n 10 || true
+            grep -rho 'REAL_KOTLIN_METAMORPHIC_Q560_SUMMARY[^<]*' app/build/test-results/testDebugUnitTest | tail -n 8 || true
           fi
       - name: Verify NO APK has been assembled or packaged
         if: always()
