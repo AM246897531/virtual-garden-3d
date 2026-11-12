@@ -53,13 +53,13 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.10.2'
-      - name: Verify 31 formerly inactive Hebrew synonym keys using REAL 100+40 Kotlin SQLite source QA
-        run: gradle --no-daemon --console plain :app:testDebugUnitTest --tests app.mishnehtorah.RambamSynonymKeyAblationTest
+      - name: Strict actual Kotlin Q500 Top1 and original-text highlight acceptance, no APK
+        run: gradle --no-daemon --console plain :app:testDebugUnitTest --tests app.mishnehtorah.RambamRealEngine500Test
       - name: Print all available real engine case results
         if: always()
         run: |
           if [ -d app/build/test-results/testDebugUnitTest ]; then
-            grep -rho 'REAL_KOTLIN_SYNONYM_[^<]*' app/build/test-results/testDebugUnitTest | tail -n 15 || true
+            grep -rho 'REAL_KOTLIN_ROBOLECTRIC_Q500_SUMMARY[^<]*' app/build/test-results/testDebugUnitTest | tail -n 5 || true
           fi
       - name: Verify NO APK has been assembled or packaged
         if: always()
