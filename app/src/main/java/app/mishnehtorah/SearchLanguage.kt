@@ -448,34 +448,79 @@ internal object SearchLanguage {
      * and multiple subquestions. Segments are only extra candidate-retrieval
      * routes. The complete question still governs the final answer ranking.
      */
+    /**
+     * Source-search instructions are NOT part of a halakhic fact pattern.
+     * These are language-level descriptions of what the user wants from the
+     * app, not law titles or hand-coded question->source mappings.
+     */
+    private val metaInstructionPhrases = listOf(
+        "מראה מקום", "בקשה למצוא", "אני לומד את משנה תורה",
+        "אני מבקש למצוא", "אני מבקש להבין", "אני מנסה להבין",
+        "אני מחפש את המקור", "אני מבקש תשובה",
+        "אין צורך להוסיף", "לא סיכום כללי", "ללא הסתמכות על תשובה",
+        "אינני מבקש פרשנות", "לא מבקש פרשנות",
+        "אני מבקש פרשנות", "אני צריך מקור", "תן לי את המקור",
+        "תן לי מראה מקום", "מקור הלכתי מדויק",
+        "תציג את ההלכה", "תן עדיפות למקור",
+        "לצורך עיון בטקסט", "משנה תורה לרמב",
+        "להסתמך על סיכום", "המקור הנכון", "ההלכה המדויקת",
+        "אם קיימים כמה מקורות", "מקורות דומים",
+        "לא להמציא מה ההלכה", "אין צורך בהסבר",
+        "בלי פרשנות עצמאית", "תשובה מבוססת מקור"
+    ).map { HebrewSearch.normalize(it) }
+
+    private fun trimQuestionPreamble(segment:String):String {
+        val colon=segment.indexOf(':')
+        if(colon<0)return segment.trim()
+        val before=HebrewSearch.normalize(segment.substring(0,colon))
+        // A colon in an actual citation such as "ברכות 2:12" must remain.
+        val introduction=before.contains("השאלה") &&
+            (before.contains("ספציפי") || before.contains("שלי") ||
+             before.contains("היא")) ||
+            before.endsWith("השאלה שלי") || before.endsWith("המצב הבא")
+        return if(introduction)segment.substring(colon+1).trim()
+            else segment.trim()
+    }
+
+    /** Isolate factual Hebrew clauses from conversational search instructions.
+     *
+     * A real question may have several conditions; keep up to three legal
+     * segments, but never use administrative preambles as source evidence.
+     * The ORIGINAL full text still supplies independent candidate recall.
+     */
     fun evidenceSegments(question: String): List<String> {
-        if (question.length<75) return emptyList()
-        val chunks=Regex("[.!?;׃\\n]+").split(question)
-            .map { it.trim() }.filter { it.length>=9 && it.length<=950 }
-        if (chunks.size<2) return emptyList()
-        val scored=chunks.mapIndexed { i, chunk ->
-            val n=HebrewSearch.normalize(chunk)
-            val words=n.split(' ').filter { it.length>=3 && it !in stop }
-            val meaningful=words.count { it.length>=4 }
-            // Regex splitting strips punctuation, so inspect the real
-            // following character in the original unmodified question.
-            val originalAt=question.indexOf(chunk)
-            val suffix=if (originalAt>=0) question.substring(originalAt+chunk.length)
-                .trimStart() else ""
-            val isQuestion=suffix.startsWith("?") || n.startsWith("מה ") ||
-                n.startsWith("מתי ") || n.startsWith("האם ") ||
-                n.startsWith("באיזה ") || n.contains(" שכחתי ")
-            val boilerplate=if (listOf("אני מבקש למצוא","אני מבקש להבין",
-                "אני מחפש את המקור","אני מנסה להבין",
-                "להסתמך על סיכום","המקור הנכון","ההלכה המדויקת",
-                "משנה תורה לרמב").any {
-                    n.contains(HebrewSearch.normalize(it))
-                }) 12 else 0
-            Triple(i,chunk,meaningful+(if (isQuestion) 6 else 0)-boilerplate)
+        if(question.length<75)return emptyList()
+        val raw=Regex("[.!?;׃\\n]+").split(question)
+            .map(::trimQuestionPreamble)
+            .filter { it.length>=9 && it.length<=950 }
+        if(raw.size<2)return emptyList()
+        val ranked=raw.mapIndexed { index,segment ->
+            val norm=HebrewSearch.normalize(segment)
+            val informative=norm.split(' ').count {
+                it.length>=4 && it !in stop
+            }
+            val location=question.indexOf(segment)
+            val suffix=if(location>=0)
+                question.substring(location+segment.length).trimStart()
+                else ""
+            val isQuestion=suffix.startsWith('?') ||
+                listOf("מה ","איך ","האם ","כמה ","למה ","מתי ",
+                    "וכמה ","ואם ","אם ","באיזה ","איזה ","היכנ ",
+                    "מדוע ","כיצד ").any {
+                    norm.startsWith(HebrewSearch.normalize(it).trim() + " ")
+                }
+            val administrative=metaInstructionPhrases.any {
+                it.isNotBlank() && norm.contains(it)
+            }
+            val score=informative+(if(isQuestion)12 else 0)-
+                (if(administrative)24 else 0)
+            Triple(index,segment,score)
         }
-        return scored.sortedWith(compareByDescending<Triple<Int,String,Int>> { it.third }
-            .thenBy { it.first }).take(3).filter { it.third>0 }
-            .map { it.second }.distinct().filter { it!=question.trim() }
+        return ranked.filter { it.third>0 }
+            .sortedWith(compareByDescending<Triple<Int,String,Int>> { it.third }
+                .thenBy { it.first })
+            .take(3).map { it.second }.distinct()
+            .filter { it!=question.trim() }
     }
 
     /**
