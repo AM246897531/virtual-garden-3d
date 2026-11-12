@@ -26,6 +26,11 @@ def main():
     normal=simulated(100,"Q100")
     assert gate(normal)["passed"]==100
     assert gate(simulated(40,"Q40"),40,"Q40")["verified"]==40
+    # This is a LOG PARSER test, not 500 actual Android searches.
+    assert gate(simulated(500,"Q500"),500,"Q500")["verified"]==500
+    must_reject(simulated(500,"Q500").replace(
+        "Q500_CASE run_id=123456 250/500 PASS",
+        "Q500_CASE run_id=123456 250/500 FAIL",1),500,"Q500")
     must_reject(normal.replace("1/100 PASS","1/100 FAIL",1))
     must_reject(normal.replace("goldCoverage=1.0","goldCoverage=0.80",1))
     must_reject(normal.replace("highlightPrecision=0.5","highlightPrecision=0.1",1))
@@ -45,6 +50,6 @@ def main():
     try:gate(normal,100,"Q100",max_p95_ms=200)
     except AssertionError:pass
     else:raise AssertionError("Accepted search latency over specified cap")
-    print("STRICT_QA_GATE_STATIC_TESTS_PASS examples=15 no_actual_device_test=True")
+    print("STRICT_QA_GATE_STATIC_TESTS_PASS examples=17 no_actual_device_test=True")
 
 if __name__=="__main__":main()
