@@ -19,6 +19,8 @@ on:
       - scripts/test_contrastive_nonopening_100.py
       - scripts/test_char_trigram_holdout40.py
       - scripts/test_fts_char_holdout40.py
+      - scripts/build_quality_500.py
+      - scripts/test_quality_500_baseline.py
       - scripts/quality_holdout_nonopening_40.json
       - scripts/validate_holdout_nonopening_40.py
       - scripts/verify_android_100_accuracy.py
@@ -68,6 +70,10 @@ jobs:
         run: python scripts/test_char_trigram_holdout40.py
       - name: Compare full passage FTS and character routes on 40 non-opening questions
         run: python scripts/test_fts_char_holdout40.py
+      - name: Construct and verify 500 source-grounded QA cases (140 freeform, 360 explicitly synthetic)
+        run: python scripts/build_quality_500.py
+      - name: Evaluate independent 500-case Python Top1 source and verbatim highlight baseline
+        run: python scripts/test_quality_500_baseline.py
       - name: Confirm early-versus-late Hebrew time intent and unmodified evidence offsets
         run: python scripts/test_natural_query_semantics.py
       - name: Verify 40 additional non-first-law free-form questions and their source anchors
@@ -111,6 +117,9 @@ jobs:
             artifacts/gold_answer_offsets_100.json
             artifacts/contrastive_nonopening_100.json
             artifacts/holdout_nonopening_40_report.json
+            artifacts/quality_500_gold.json
+            artifacts/quality_500_description.json
+            artifacts/quality_500_source_baseline.json
             artifacts/kotlin_parse_no_compile.json
             artifacts/experimental_e5_100.json
             artifacts/experimental_e5_scores_100.npz
