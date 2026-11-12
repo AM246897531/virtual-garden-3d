@@ -23,9 +23,10 @@ jobs:
       - name: Use Android SDK already present on Ubuntu runner
         run: |
           echo "ANDROID_HOME=${ANDROID_HOME:-unset}"
-          command -v sdkmanager
-          sdkmanager --version
-          sdkmanager --install "platforms;android-35" "build-tools;35.0.0"
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | head -n1)"
+          test -n "$SDKMANAGER"
+          "$SDKMANAGER" --version
+          "$SDKMANAGER" --install "platforms;android-35" "build-tools;35.0.0"
           test -f "${ANDROID_HOME}/platforms/android-35/android.jar"
       - uses: gradle/actions/setup-gradle@v4
         with:
