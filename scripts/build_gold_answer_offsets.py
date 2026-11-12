@@ -19,6 +19,9 @@ SUITES=(
     (40,ROOT/"scripts/quality_holdout_nonopening_40.json",
         ROOT/"app/src/debug/assets/quality_holdout_nonopening_40.json",
         ROOT/"artifacts/gold_answer_offsets_40.json"),
+    (500,ROOT/"artifacts/quality_500_gold.json",
+         ROOT/"app/src/debug/assets/quality_500_gold.json",
+         ROOT/"artifacts/gold_answer_offsets_500.json"),
 )
 FINAL_FOLD=str.maketrans("ךםןףץ","כמנפצ")
 
