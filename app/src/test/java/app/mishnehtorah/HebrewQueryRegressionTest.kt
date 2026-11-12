@@ -74,6 +74,10 @@ class HebrewQueryRegressionTest {
             "אם שכחתי את הברכה מה הדין").asksSpecificCase)
         assertFalse(SearchLanguage.analyze(
             "מהם עיקרי הלכות שבת").asksSpecificCase)
+        assertTrue(SearchLanguage.analyze(
+            "ואם לא הספיק לקיים מה הדין").asksSpecificCase)
+        assertTrue(SearchLanguage.analyze(
+            "ואין לו אפשרות לברך").hasNegation)
     }
 
     @Test fun fullOriginalQueryStaysUnmodifiedWithoutMultipleClauses() {
