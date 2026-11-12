@@ -20,7 +20,7 @@ ENDING=" אני מבקש למצוא את ההלכה המדויקת בלשון ה
 def sentence_segments(question):
     if len(question)<75:return []
     chunks=[s.strip() for s in re.split(r'[.!?;׃\n]+',question)]
-    chunks=[s for s in chunks if 16<=len(s)<=950]
+    chunks=[s for s in chunks if 9<=len(s)<=950]
     if len(chunks)<2:return []
     graded=[]
     for order,sentence in enumerate(chunks):
@@ -28,7 +28,9 @@ def sentence_segments(question):
         specificity=sum(len(w)>=4 for w in n.split())
         inquiry=n.startswith(("מה ","מתי ","האם ","באיזה ")) or " שכחתי " in n
         boilerplate=any(normalize(x) in n for x in (
-            "אני מבקש למצוא","אני מנסה להבין",
+            "אני מבקש למצוא","אני מבקש להבין",
+            "אני מחפש את המקור","אני מנסה להבין",
+            "להסתמך על סיכום",
             "המקור הנכון","ההלכה המדויקת","משנה תורה לרמב"))
         score=specificity+6*int(inquiry)-12*int(boilerplate)
         graded.append((score,order,sentence))
