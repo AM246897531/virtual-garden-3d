@@ -1,0 +1,362 @@
+[
+  {
+    "question": "למה קוראים בקריאת שמע דווקא את שלוש הפרשיות האלה, ומה הסדר שלהן?",
+    "section": "קריאת שמע",
+    "chapter": 1,
+    "law": 2,
+    "highlight_contains": "שלשה פרשיות אלו",
+    "origin": "assistant-authored-reviewed-paraphrase-nonopening",
+    "tier": 3
+  },
+  {
+    "question": "למה מזכירים את פרשת ציצית בקריאת שמע גם בלילה, כשלא מקיימים אז מצוות ציצית?",
+    "section": "קריאת שמע",
+    "chapter": 1,
+    "law": 3,
+    "highlight_contains": "זכרון יציאת מצרים",
+    "origin": "assistant-authored-reviewed-paraphrase-nonopening",
+    "tier": 3
+  },
+  {
+    "question": "מה אומרים בשקט מיד אחרי שמע ישראל בפסוק הראשון?",
+    "section": "קריאת שמע",
+    "chapter": 1,
+    "law": 4,
+    "highlight_contains": "ברוך שם כבוד מלכותו לעולם ועד",
+    "origin": "assistant-authored-reviewed-paraphrase-nonopening",
+    "tier": 3
+  },
+  {
+    "question": "כמה ברכות אומרים לפני ואחרי קריאת שמע של שחרית?",
+    "section": "קריאת שמע",
+    "chapter": 1,
+    "law": 5,
+    "highlight_contains": "ביום מברך שתים לפניה ואחת לאחריה",
+    "origin": "assistant-authored-reviewed-paraphrase-nonopening",
+    "tier": 3
+  },
+  {
+    "question": "האם חייבים לברך לפני כל דבר מאכל, אפילו כמות קטנה?",
+    "section": "ברכות",
+    "chapter": 1,
+    "law": 2,
+    "highlight_contains": "לברך על כל מאכל תחלה ואחר כך יהנה ממנו",
+    "origin": "assistant-authored-reviewed-paraphrase-nonopening",
+    "tier": 3
+  },
+  {
+    "question": "לאילו שלושה סוגים הרמבם מחלק את הברכות?",
+    "section": "ברכות",
+    "chapter": 1,
+    "law": 4,
+    "highlight_contains": "ברכות הנייה וברכות מצות וברכות הודאה",
+    "origin": "assistant-authored-reviewed-paraphrase-nonopening",
+    "tier": 3
+  },
+  {
+    "question": "האם מותר לי לשנות את נוסח הברכה שחכמים תיקנו ולהוסיף מילים משלי?",
+    "section": "ברכות",
+    "chapter": 1,
+    "law": 5,
+    "highlight_contains": "אין ראוי לשנותם ולא להוסיף",
+    "origin": "assistant-authored-reviewed-paraphrase-nonopening",
+    "tier": 3
+  },
+  {
+    "question": "אם אדם אינו יודע את הברכה בעברית אבל יכול לומר אותה בשפה אחרת, האם זה מועיל?",
+    "section": "ברכות",
+    "chapter": 1,
+    "law": 6,
+    "highlight_contains": "נאמרין בכל לשון",
+    "origin": "assistant-authored-reviewed-paraphrase-nonopening",
+    "tier": 3
+  },
+  {
+    "question": "בהלכות שבת הרמבם כותב לפעמים פטור, האם פירושו שהמעשה מותר?",
+    "section": "שבת",
+    "chapter": 1,
+    "law": 3,
+    "highlight_contains": "פטור מן הכרת ומן הסקילה ומן הקרבן אבל אסור",
+    "origin": "assistant-authored-reviewed-paraphrase-nonopening",
+    "tier": 3
+  },
+  {
+    "question": "אפשר להזיז כיסא או ספסל בשבת בלי שהתכוונתי לעשות חריץ ברצפה?",
+    "section": "שבת",
+    "chapter": 1,
+    "law": 5,
+    "highlight_contains": "גורר אדם מטה וכסא וספסל",
+    "origin": "assistant-authored-reviewed-paraphrase-nonopening",
+    "tier": 3
+  },
+  {
+    "question": "אם עשיתי מעשה שבטוח יגרום למלאכה בשבת, אבל לא התכוונתי למלאכה, מה הדין?",
+    "section": "שבת",
+    "chapter": 1,
+    "law": 6,
+    "highlight_contains": "אף על פי שלא נתכוין לה חייב",
+    "origin": "assistant-authored-reviewed-paraphrase-nonopening",
+    "tier": 3
+  },
+  {
+    "question": "שמעתי תקיעת שופר משופר שנלקח שלא ברשות. האם יוצאים כך ידי חובה?",
+    "section": "שופר וסוכה ולולב",
+    "chapter": 1,
+    "law": 3,
+    "highlight_contains": "שופר הגזול שתקע בו יצא",
+    "origin": "assistant-authored-reviewed-paraphrase-nonopening",
+    "tier": 3
+  },
+  {
+    "question": "מצאתי שופר על עץ, האם אפשר לטפס בשבת או בראש השנה כדי להביא אותו לתקיעה?",
+    "section": "שופר וסוכה ולולב",
+    "chapter": 1,
+    "law": 4,
+    "highlight_contains": "אינו עולה באילן ואינו שט",
+    "origin": "assistant-authored-reviewed-paraphrase-nonopening",
+    "tier": 3
+  },
+  {
+    "question": "חמץ של יהודי שנשאר אצלו כל חג הפסח, האם מותר להשתמש בו אחרי החג?",
+    "section": "חמץ ומצה",
+    "chapter": 1,
+    "law": 4,
+    "highlight_contains": "חמץ שעבר עליו הפסח אסור בהניה לעולם",
+    "origin": "assistant-authored-reviewed-paraphrase-nonopening",
+    "tier": 3
+  },
+  {
+    "question": "מה הדין אם פירור חמץ התערב בתוך מאכל אחר במהלך חג הפסח?",
+    "section": "חמץ ומצה",
+    "chapter": 1,
+    "law": 5,
+    "highlight_contains": "חמץ שנתערב בדבר אחר תוך הפסח",
+    "origin": "assistant-authored-reviewed-paraphrase-nonopening",
+    "tier": 3
+  },
+  {
+    "question": "האם כדאי תמיד לבחור באופי קיצוני ולא להיות באמצע?",
+    "section": "דעות",
+    "chapter": 1,
+    "law": 3,
+    "highlight_contains": "שתי קצוות הרחוקות זו מזו",
+    "origin": "assistant-authored-reviewed-paraphrase-nonopening",
+    "tier": 3
+  },
+  {
+    "question": "מהי דרך האופי הישרה שממליץ הרמבם לאדם לפתח?",
+    "section": "דעות",
+    "chapter": 1,
+    "law": 4,
+    "highlight_contains": "הדרך הישרה היא מדה בינונית",
+    "origin": "assistant-authored-reviewed-paraphrase-nonopening",
+    "tier": 3
+  },
+  {
+    "question": "כשבית המקדש אינו קיים ואין אפשרות להביא קורבן, מה נשאר לאדם כדי לכפר על מעשיו?",
+    "section": "תשובה",
+    "chapter": 1,
+    "law": 3,
+    "highlight_contains": "אין שם אלא תשובה",
+    "origin": "assistant-authored-reviewed-paraphrase-nonopening",
+    "tier": 3
+  },
+  {
+    "question": "מה צריך אדם לעשות עם החטא והכוונות שלו כדי שתהיה זו תשובה אמיתית?",
+    "section": "תשובה",
+    "chapter": 2,
+    "law": 2,
+    "highlight_contains": "שיעזוב החוטא חטאו",
+    "origin": "assistant-authored-reviewed-paraphrase-nonopening",
+    "tier": 3
+  },
+  {
+    "question": "מישהו מתוודה במילים אבל מתכוון להמשיך באותו מעשה. מה אומר על כך הרמבם?",
+    "section": "תשובה",
+    "chapter": 2,
+    "law": 3,
+    "highlight_contains": "לא גמר בלבו לעזוב",
+    "origin": "assistant-authored-reviewed-paraphrase-nonopening",
+    "tier": 3
+  },
+  {
+    "question": "האם מצוות לימוד תורה מחייבת את הסבא ללמד גם את הנכד?",
+    "section": "תלמוד תורה",
+    "chapter": 1,
+    "law": 2,
+    "highlight_contains": "חייב ללמד את בן בנו",
+    "origin": "assistant-authored-reviewed-paraphrase-nonopening",
+    "tier": 3
+  },
+  {
+    "question": "האם אב מחויב לשלם למלמד כדי שבנו ילמד תורה?",
+    "section": "תלמוד תורה",
+    "chapter": 1,
+    "law": 3,
+    "highlight_contains": "חייב לשכור מלמד לבנו",
+    "origin": "assistant-authored-reviewed-paraphrase-nonopening",
+    "tier": 3
+  },
+  {
+    "question": "אם האב עצמו רוצה ללמוד וגם בנו רוצה, מי קודם כשיש רק אפשרות אחת?",
+    "section": "תלמוד תורה",
+    "chapter": 1,
+    "law": 4,
+    "highlight_contains": "הוא קודם לבנו",
+    "origin": "assistant-authored-reviewed-paraphrase-nonopening",
+    "tier": 3
+  },
+  {
+    "question": "מאיזה גיל או שלב צריך אב להתחיל ללמד את בנו פסוקי תורה?",
+    "section": "תלמוד תורה",
+    "chapter": 1,
+    "law": 6,
+    "highlight_contains": "מאימתי אביו חייב ללמדו תורה",
+    "origin": "assistant-authored-reviewed-paraphrase-nonopening",
+    "tier": 3
+  },
+  {
+    "question": "מה קורה לכשרות של מזוזה אם חסרה בה אפילו אות קטנה?",
+    "section": "תפילין ומזוזה וספר תורה",
+    "chapter": 1,
+    "law": 2,
+    "highlight_contains": "אפילו אות אחת משתי הפרשיות",
+    "origin": "assistant-authored-reviewed-paraphrase-nonopening",
+    "tier": 3
+  },
+  {
+    "question": "אם כתב אות במזוזה בצבע אדום או ירוק במקום בדיו, מה הדין?",
+    "section": "תפילין ומזוזה וספר תורה",
+    "chapter": 1,
+    "law": 5,
+    "highlight_contains": "שאר מיני צבעונין כגון האדום והירוק",
+    "origin": "assistant-authored-reviewed-paraphrase-nonopening",
+    "tier": 3
+  },
+  {
+    "question": "מי שרק שמע מגילת אסתר מאדם אחר, האם זה נחשב כאילו קרא בעצמו?",
+    "section": "מגילה וחנוכה",
+    "chapter": 1,
+    "law": 2,
+    "highlight_contains": "אחד הקורא ואחד השומע מן הקורא יצא ידי חובתו",
+    "origin": "assistant-authored-reviewed-paraphrase-nonopening",
+    "tier": 3
+  },
+  {
+    "question": "האם צריכים לקרוא את המגילה גם בלילה וגם שוב ביום פורים?",
+    "section": "מגילה וחנוכה",
+    "chapter": 1,
+    "law": 3,
+    "highlight_contains": "מצוה לקרותה בלילה וביום",
+    "origin": "assistant-authored-reviewed-paraphrase-nonopening",
+    "tier": 3
+  },
+  {
+    "question": "למה תאריך קריאת המגילה בעיר מוקפת חומה תלוי בחומות מתקופת יהושע?",
+    "section": "מגילה וחנוכה",
+    "chapter": 1,
+    "law": 4,
+    "highlight_contains": "מקפת חומה מימי יהושע בן נון",
+    "origin": "assistant-authored-reviewed-paraphrase-nonopening",
+    "tier": 3
+  },
+  {
+    "question": "אם אין לי חוט תכלת, האם אני עדיין יכול לקיים מצוות ציצית בחוטי לבן בלבד?",
+    "section": "ציצית",
+    "chapter": 1,
+    "law": 4,
+    "highlight_contains": "התכלת אינו מעכב את הלבן",
+    "origin": "assistant-authored-reviewed-paraphrase-nonopening",
+    "tier": 3
+  },
+  {
+    "question": "קצרו את כל התבואה ולא הספיקו לתת פאה עד שהיבול נשרף. האם נותר תיקון?",
+    "section": "מתנות עניים",
+    "chapter": 1,
+    "law": 3,
+    "highlight_contains": "אבד כל הקציר שקצר או נשרף",
+    "origin": "assistant-authored-reviewed-paraphrase-nonopening",
+    "tier": 3
+  },
+  {
+    "question": "מה באמת מניחים בשביל עירוב חצרות בין כמה בתים, ולמה צריך אוכל משותף?",
+    "section": "עירובין",
+    "chapter": 1,
+    "law": 6,
+    "highlight_contains": "שיתערבו במאכל אחד",
+    "origin": "assistant-authored-reviewed-paraphrase-nonopening",
+    "tier": 3
+  },
+  {
+    "question": "מה מלמד הרמבם על ציבור שמייחס צרות רק למקרה ולא מבקש להתעורר ולשנות מעשים?",
+    "section": "תעניות",
+    "chapter": 1,
+    "law": 3,
+    "highlight_contains": "אם לא יזעקו ולא יריעו",
+    "origin": "assistant-authored-reviewed-paraphrase-nonopening",
+    "tier": 3
+  },
+  {
+    "question": "האם מותר לגזור תעניות ציבור בכל יום ברציפות כשמתעוררת צרה?",
+    "section": "תעניות",
+    "chapter": 1,
+    "law": 5,
+    "highlight_contains": "אינן יום אחר יום",
+    "origin": "assistant-authored-reviewed-paraphrase-nonopening",
+    "tier": 3
+  },
+  {
+    "question": "אפשר לקבוע תענית ציבור בשבת או ביום טוב בגלל צרה?",
+    "section": "תעניות",
+    "chapter": 1,
+    "law": 6,
+    "highlight_contains": "אין גוזרין תענית על הצבור לא בשבתות",
+    "origin": "assistant-authored-reviewed-paraphrase-nonopening",
+    "tier": 3
+  },
+  {
+    "question": "מתי שבועה נחשבת לשבועת שווא כשאדם נשבע על דבר שברור לכולם שאינו נכון?",
+    "section": "שבועות",
+    "chapter": 1,
+    "law": 4,
+    "highlight_contains": "שנשבע על דבר הידוע שאין כן",
+    "origin": "assistant-authored-reviewed-paraphrase-nonopening",
+    "tier": 3
+  },
+  {
+    "question": "אדם נדר נדר, האם יש עליו מצווה מן התורה לקיים את מה שהוציא מפיו?",
+    "section": "נדרים",
+    "chapter": 1,
+    "law": 4,
+    "highlight_contains": "שיקיים אדם שבועתו או נדרו",
+    "origin": "assistant-authored-reviewed-paraphrase-nonopening",
+    "tier": 3
+  },
+  {
+    "question": "אם התורה אומרת עין תחת עין, האם הכוונה בפועל לפגיעה גופנית או לתשלום?",
+    "section": "חובל ומזיק",
+    "chapter": 1,
+    "law": 5,
+    "highlight_contains": "עין תחת עין תשלומין הוא",
+    "origin": "assistant-authored-reviewed-paraphrase-nonopening",
+    "tier": 3
+  },
+  {
+    "question": "מי רשאי למנות מלך בישראל, האם מספיק שרק חכמים יחליטו בלי נביא?",
+    "section": "מלכים ומלחמות",
+    "chapter": 1,
+    "law": 3,
+    "highlight_contains": "אלא על פי בית דין של שבעים זקנים ועל פי נביא",
+    "origin": "assistant-authored-reviewed-paraphrase-nonopening",
+    "tier": 3
+  },
+  {
+    "question": "אחרי שבנו את המקדש בירושלים, האם עדיין היה מותר לבנות מקדש ולהקריב במקום אחר?",
+    "section": "בית הבחירה",
+    "chapter": 1,
+    "law": 3,
+    "highlight_contains": "נאסרו כל המקומות כולן לבנות בהן בית",
+    "origin": "assistant-authored-reviewed-paraphrase-nonopening",
+    "tier": 3
+  }
+]
