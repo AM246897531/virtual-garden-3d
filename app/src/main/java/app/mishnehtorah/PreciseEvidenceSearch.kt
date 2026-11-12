@@ -154,6 +154,59 @@ internal class PreciseEvidenceSearch(
         }
     }
 
+    /**
+     * Retrieve introductory passages from topics literally specified by the
+     * user's wording. A source title is evidence for candidate discovery,
+     * NEVER a substitute for checking the law itself during reranking.
+     * Handles productive spelling differences: "תרומה" vs "תרומות".
+     */
+    private fun titleRoot(word: String): String {
+        val unprefixed=if (word.length>=5 && word.startsWith("ו")) word.drop(1)
+            else word
+        return when {
+            unprefixed.length>=5 && unprefixed.endsWith("ות") ->
+                unprefixed.dropLast(2)
+            unprefixed.length>=5 && unprefixed.endsWith("ימ") ->
+                unprefixed.dropLast(2)
+            unprefixed.length>=5 && unprefixed.endsWith("ה") ->
+                unprefixed.dropLast(1)
+            else -> unprefixed
+        }
+    }
+
+    private fun addExplicitTopicChapterOpenings(
+        query: String, output: MutableSet<Int>
+    ) {
+        val words=HebrewSearch.normalize(query).split(' ')
+            .filter { it.length>=4 }.map(::titleRoot).toHashSet()
+        if (words.isEmpty()) return
+        val matching=ArrayList<String>()
+        db.rawQuery("SELECT section FROM section_totals",null).use { c ->
+            while (c.moveToNext()) {
+                val section=c.getString(0)
+                val topics=HebrewSearch.normalize(
+                    section.removePrefix("משנה תורה, הלכות "))
+                    .split(' ').filter {
+                        it.length>=4 && it!="תורה" && it!="הלכות"
+                    }
+                if (topics.isNotEmpty() && topics.size<=2 &&
+                    topics.all { titleRoot(it) in words }
+                ) matching.add(section)
+            }
+        }
+        // A query can explicitly mention two topics (e.g. Shabbat +
+        // blessings); include both, not all similarly named chapters.
+        for (section in matching.take(3)) {
+            db.rawQuery(
+                "SELECT p.id FROM passages p JOIN laws l ON p.law_id=l.id " +
+                    "WHERE l.section=? AND l.halakhah=1",
+                arrayOf(section)
+            ).use { c ->
+                while (c.moveToNext()) output.add(c.getInt(0))
+            }
+        }
+    }
+
     private fun candidateIds(analysis: SearchLanguage.Analysis): LinkedHashSet<Int> {
         val terms=analysis.terms.sortedByDescending { weight(it) }.take(8)
         val out=LinkedHashSet<Int>(4500)
@@ -175,6 +228,7 @@ internal class PreciseEvidenceSearch(
         if (groups.size>=2 && out.size<10000)
             ftsIds(groups.take(6).joinToString(" OR "),1800,out)
         addChapterPassages(chapterRoutingQuery(analysis),out)
+        addExplicitTopicChapterOpenings(analysis.normalized,out)
         return out
     }
 
