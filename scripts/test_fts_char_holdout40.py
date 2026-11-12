@@ -66,8 +66,9 @@ def fts_laws(db,question):
         target.update(passage_fts_ids(db,group,800))
     if not target:return set()
     matched=set()
-    for batch_start in range(0,len(target),300):
-        batch=list(target)[batch_start:batch_start+300]
+    selected=list(target)
+    for batch_start in range(0,len(selected),300):
+        batch=selected[batch_start:batch_start+300]
         placeholders=",".join("?"*len(batch))
         matched.update(r[0] for r in db.execute(
             f"SELECT DISTINCT law_id FROM passages WHERE id IN ({placeholders})",batch))
@@ -82,6 +83,9 @@ def main():
     gold=json.loads(SUITE.read_text(encoding="utf-8"))
     assert len(gold)==40 and all(item["law"]>1 for item in gold)
     char=CharIndex()
+    # FTS is expensive; query each question ONCE and reuse its immutable hits
+    # when sweeping different char-index candidate depths.
+    fts_by_question=[fts_laws(db,item["question"]) for item in gold]
     for count in (80,140,240):
         direct=combined=0
         missing=[]
@@ -92,7 +96,7 @@ def main():
             for bridge in bridges(item["question"]):
                 hits.update(char.nearest(bridge,count))
             direct+=expected in hits
-            fallback=fts_laws(db,item["question"])
+            fallback=fts_by_question[idx-1]
             fts_sizes.append(len(fallback))
             hits.update(fallback)
             if expected in hits:combined+=1
