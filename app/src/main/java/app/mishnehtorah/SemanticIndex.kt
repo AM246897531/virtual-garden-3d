@@ -1,6 +1,7 @@
 package app.mishnehtorah
 
 import android.content.Context
+import android.database.sqlite.SQLiteDatabase
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.math.sqrt
@@ -63,6 +64,23 @@ class SemanticIndex private constructor(
             require(!buffer.hasRemaining() && tokens.size == nTerms) { "Corrupt Hebrew index" }
             return SemanticIndex(dim, tokens, bucketWeights, nBuckets, scale,
                 subwordConfig ushr 16, subwordConfig and 0xffff, lawIds, lawVectors)
+        }
+    }
+
+    /**
+     * A stale trained model that points at wrong law IDs could produce
+     * convincing but incorrect references. Check all ordered law IDs against
+     * the installed on-device corpus before enabling semantic retrieval.
+     * This is read-only and performed exactly once on cold startup.
+     */
+    fun matchesCorpus(database: SQLiteDatabase): Boolean {
+        database.rawQuery("SELECT id FROM laws ORDER BY id",null).use { cursor ->
+            var offset=0
+            while (cursor.moveToNext()) {
+                if (offset>=ids.size || cursor.getInt(0)!=ids[offset]) return false
+                offset++
+            }
+            return offset==ids.size
         }
     }
 
