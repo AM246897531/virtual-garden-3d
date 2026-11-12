@@ -18,6 +18,7 @@ on:
       - scripts/test_focused_conversation_100.py
       - scripts/test_contrastive_nonopening_100.py
       - scripts/test_char_trigram_holdout40.py
+      - scripts/test_fts_char_holdout40.py
       - scripts/quality_holdout_nonopening_40.json
       - scripts/validate_holdout_nonopening_40.py
       - scripts/verify_android_100_accuracy.py
@@ -49,6 +50,8 @@ jobs:
         run: python scripts/test_strict_android_gate.py
       - name: Rebuild original Mishneh Torah corpus - no Gradle or Android compilation
         run: python scripts/build_corpus.py
+      - name: Build authentic source-passage FTS for independent candidate comparisons
+        run: python scripts/build_passage_index.py
       - name: Build 15MB offline source-only character-recall index
         run: python scripts/build_char_trigram_index.py
       - name: Verify character index binary and 100 natural-language source recall
@@ -63,6 +66,8 @@ jobs:
         run: python scripts/test_contrastive_nonopening_100.py
       - name: Measure Top-K source candidate recall on 40 independent non-opening Hebrew questions
         run: python scripts/test_char_trigram_holdout40.py
+      - name: Compare full passage FTS and character routes on 40 non-opening questions
+        run: python scripts/test_fts_char_holdout40.py
       - name: Confirm early-versus-late Hebrew time intent and unmodified evidence offsets
         run: python scripts/test_natural_query_semantics.py
       - name: Verify 40 additional non-first-law free-form questions and their source anchors
