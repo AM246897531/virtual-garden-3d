@@ -12,6 +12,7 @@ on:
       - scripts/test_focused_conversation_100.py
       - scripts/test_contrastive_nonopening_100.py
       - scripts/check_kotlin_syntax_no_compile.py
+      - scripts/experiment_multilingual_reranker_100.py
       - scripts/build_char_trigram_index.py
       - scripts/build_gold_answer_offsets.py
       - .github/workflows/mishneh-source-qa-100.yml
@@ -54,7 +55,7 @@ jobs:
       - name: Derive 100 exact answer-phrase locations in original UTF-16 texts
         run: python scripts/build_gold_answer_offsets.py
       - name: Experimental Hebrew E5 model dependencies (explicit opt-in commit only)
-        if: contains(github.event.head_commit.message, '[run-e5]')
+        if: contains(github.event.head_commit.message, '[run-e5]') || contains(github.event.head_commit.message, '[run-cross]') || contains(github.event.head_commit.message, '[run-cross]')
         run: |
           python -m pip install 'sentence-transformers>=3.4,<6' 'scikit-learn>=1.5,<2'
       - name: Benchmark pretrained small Hebrew E5 against 100 labeled sources (NO APK)
@@ -65,6 +66,17 @@ jobs:
           TOKENIZERS_PARALLELISM: 'false'
           OMP_NUM_THREADS: '4'
         run: python scripts/experiment_tiny_hebrew_e5_100.py
+      - name: Install independent 141M multilingual ONNX reranker dependencies
+        if: contains(github.event.head_commit.message, '[run-cross]')
+        run: python -m pip install 'onnxruntime>=1.20,<2' 'transformers>=4.53,<5' 'huggingface_hub>=0.27,<1'
+      - name: Score 100 source questions with quantized cross-encoder, no APK
+        if: contains(github.event.head_commit.message, '[run-cross]')
+        env:
+          HEBREW_RERANK_MODEL: Horizon-Labs/multilingual-reranker-small
+          TOKENIZERS_PARALLELISM: 'false'
+          OMP_NUM_THREADS: '4'
+          HF_HUB_DISABLE_TELEMETRY: '1'
+        run: python scripts/experiment_multilingual_reranker_100.py
       - name: Upload source-only QA evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -79,5 +91,6 @@ jobs:
             artifacts/kotlin_parse_no_compile.json
             artifacts/experimental_e5_100.json
             artifacts/experimental_e5_scores_100.npz
+            artifacts/experimental_multilingual_reranker_100.json
           retention-days: 30
           if-no-files-found: warn
