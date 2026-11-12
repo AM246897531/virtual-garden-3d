@@ -84,7 +84,9 @@ jobs:
       - name: Validate 100 question references and verbatim answer-anchor text
         run: python scripts/validate_natural_100.py
       - name: Derive 100 exact answer-phrase locations in original UTF-16 texts
-        run: python scripts/build_gold_answer_offsets.py
+        run: |
+          python scripts/build_quality_560_wrapper_stress.py
+          python scripts/build_gold_answer_offsets.py
       - name: Experimental Hebrew E5 model dependencies (explicit opt-in commit only)
         if: contains(github.event.head_commit.message, '[run-e5]') || contains(github.event.head_commit.message, '[run-cross]')
         run: |
