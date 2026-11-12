@@ -58,14 +58,17 @@ class MainActivity : ComponentActivity() {
         val debugTypeahead = intent.getBooleanExtra("debug_typeahead", false)
         val debugQuality = intent.getBooleanExtra("debug_quality_50", false)
         val debugQuality100 = intent.getBooleanExtra("debug_quality_100", false)
+        val debugHoldout40 = intent.getBooleanExtra("debug_quality_holdout_40", false)
         setContent { RambamApp(initialQuery, debugTypeahead,
-            debugQuality || debugQuality100, debugQuality100) }
+            debugQuality || debugQuality100 || debugHoldout40,
+            debugQuality100, debugHoldout40) }
     }
 }
 
 @Composable
 fun RambamApp(initialQuery: String = "", debugTypeahead: Boolean = false,
-              debugQuality: Boolean = false, debugQuality100: Boolean = false) {
+              debugQuality: Boolean = false, debugQuality100: Boolean = false,
+              debugHoldout40: Boolean = false) {
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("reading_preferences", 0) }
     var dark by rememberSaveable { mutableStateOf(prefs.getBoolean("dark", false)) }
@@ -131,9 +134,13 @@ fun RambamApp(initialQuery: String = "", debugTypeahead: Boolean = false,
                     // Two distinct regression sets: the old curated questions
                     // AND an unseen cross-section set. Report exact Top-1 accuracy;
                     // never silently count semantic proximity as a correct source.
-                    val suite = if (debugQuality100)
-                        listOf("quality_natural_100.json" to "Q100")
-                    else listOf("quality_full_110.json" to "Q110")
+                    val suite = when {
+                        debugHoldout40 ->
+                            listOf("quality_holdout_nonopening_40.json" to "Q40")
+                        debugQuality100 ->
+                            listOf("quality_natural_100.json" to "Q100")
+                        else -> listOf("quality_full_110.json" to "Q110")
+                    }
                     for ((asset, prefix) in suite) {
                         val raw = context.assets.open(asset).bufferedReader().use { it.readText() }
                         val cases = JSONArray(raw)
@@ -183,8 +190,9 @@ fun RambamApp(initialQuery: String = "", debugTypeahead: Boolean = false,
                             val anchorPresent=boundsValid && hasGoldAnchor &&
                                 HebrewSearch.normalize(top!!.text.substring(passage!!.start, passage!!.end))
                                     .contains(HebrewSearch.normalize(required))
+                            val requireExactOffset=debugQuality100 || debugHoldout40
                             val anchorValid=anchorPresent &&
-                                (!debugQuality100 || offsetAccurate)
+                                (!requireExactOffset || offsetAccurate)
                             // Legacy source-quality and new strict exact offset score
                             // are kept independent, so weak highlight checks cannot
                             // masquerade as measured 100% correctness.
@@ -213,7 +221,11 @@ fun RambamApp(initialQuery: String = "", debugTypeahead: Boolean = false,
                             "max_ms=${sorted.last()}")
                     }
                 } catch (error: Throwable) {
-                    Log.e("RambamQuality", if (debugQuality100) "Q100_FAILED_TO_RUN" else "Q110_FAILED_TO_RUN", error)
+                    Log.e("RambamQuality", when {
+                        debugHoldout40 -> "Q40_FAILED_TO_RUN"
+                        debugQuality100 -> "Q100_FAILED_TO_RUN"
+                        else -> "Q110_FAILED_TO_RUN"
+                    }, error)
                 }
             }
         }
