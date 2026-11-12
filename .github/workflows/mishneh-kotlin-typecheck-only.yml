@@ -33,6 +33,8 @@ jobs:
           gradle-version: '8.10.2'
       - name: Compile Kotlin source files only - never assemble/package/install
         run: gradle --no-daemon --console plain :app:compileDebugKotlin
+      - name: Execute actual JVM Hebrew query analysis regressions - no APK
+        run: gradle --no-daemon --console plain :app:testDebugUnitTest --tests app.mishnehtorah.HebrewQueryRegressionTest
       - name: Certify output contains no APK
         run: |
           if find app/build -type f -name '*.apk' -print -quit | grep -q .; then
