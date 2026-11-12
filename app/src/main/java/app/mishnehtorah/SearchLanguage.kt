@@ -264,12 +264,17 @@ internal object SearchLanguage {
         val negationWords=setOf("לא","בלי","ללא","אינו","אינה",
             "אינני","שלא","אין","אינן")
             .map { HebrewSearch.normalize(it) }.toSet()
-        val hasNegation=all.any { it in negationWords }
+        // Hebrew productive one-letter prefixes must not hide a negation:
+        // ואין -> ואינ, ואם -> ואמ after the standard final-letter fold.
+        fun exactOrPrefixed(token:String, vocabulary:Set<String>):Boolean =
+            token in vocabulary || (token.length>=3 &&
+                token.first() in "ושבהלמכ" && token.drop(1) in vocabulary)
+        val hasNegation=all.any { exactOrPrefixed(it,negationWords) }
         val specificConditionWords=setOf("אם","כאשר","אפילו","למרות",
             "במקרה","מקרה","ספק","שכחתי","שכח","נזכר","איחר",
             "פספס","תנאי","בתנאי","קרה")
             .map { HebrewSearch.normalize(it) }.toSet()
-        val asksSpecificCase=all.any { it in specificConditionWords ||
+        val asksSpecificCase=all.any { exactOrPrefixed(it,specificConditionWords) ||
             (it.length>=4 && it.startsWith("כש")) }
         val nonJewish=normalized.contains("אינו יהודי") || normalized.contains("לא יהודי")
         val discourseLead=normalized.startsWith("אני רוצה לברר") ||
