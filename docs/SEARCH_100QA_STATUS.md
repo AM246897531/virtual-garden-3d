@@ -132,3 +132,71 @@ The user authorized exploring smaller local models and auxiliary open-licensed l
 4. Measure actual on-device median/p95, crashes, memory and UI highlights after the user explicitly authorizes building an APK. Continue to honor the current no-APK constraint.
 
 **Not completed**: 500/500 Top-1 and 500/500 truly precise turquoise answers in the real app; not a verified release.
+
+
+## 12 November 2026 — verified source-engine upgrades and adversarial robustness
+
+This section records **completed** GitHub Action measurements. Failures of
+strict acceptance tests are expected until all measured Top-1 sources AND
+answer spans pass. Do not label a quality-gate failure a build/compiler failure.
+
+### Production source-only improvements (uncompiled into APK)
+- Original Kotlin 500 question baseline: **431/500 Top-1**, **368/500**
+  strict source-anchor and original-offset highlight, reviewed subset
+  **71/140 Top-1** and **40/140 highlight**. 360/360 source-derived Top-1.
+  [Run 43254018391](https://github.com/AM246897531/virtual-garden-3d/actions/runs/43254018391).
+- New `AdaptiveSpanRefiner.kt` in production CorpusStore, invoked for search
+  top hit, deferred hits, and explicit law-open. It shrinks only when at least
+  **70% of substantive question tokens literally occur** in the same authentic
+  law, using original UTF-16 ranges, no answer-label memorization. Independent
+  source-only A/B established zero net regression for reviewed cases and
+  +13 passing source-derived highlights; the ACTUAL Kotlin engine confirmed
+  **431/500 Top-1 and 381/500 answer-span passing**, reviewed **40/140**
+  highlights, synthetic **341/360**. p50 around 150ms and p95 231ms in
+  Robolectric, not a physical phone. [Run 43255416436](https://github.com/AM246897531/virtual-garden-3d/actions/runs/43255416436).
+- Tiny semantic snippet reranker experiment: best alternative improved only one
+  manually authored question while keeping synthetics unchanged; NOT integrated.
+  [Run 43255715270](https://github.com/AM246897531/virtual-garden-3d/actions/runs/43255715270).
+
+### Severe long-query failure found and fixed in source
+- New `scripts/build_quality_560_wrapper_stress.py` generates **4 semantically
+  neutral verbose context wrappers around each of 140 genuine authored
+  questions**, i.e. **560 correlated test cases**, NOT 560 independent question
+  labels. It validates exact corresponding authentic text/UTF-16 anchor offsets.
+- First real Kotlin wrapper run: **150/560 Top-1**, **74/560 passing highlights**,
+  **164/560 with zero results**, median 348ms, p95 506ms.
+  [Run 43254688337](https://github.com/AM246897531/virtual-garden-3d/actions/runs/43254688337).
+- Generalized query decomposition in `SearchLanguage.evidenceSegments` now
+  discards procedural instructions to find a source or omit a summary, but
+  retains factual subquestions; literal user content remains available for
+  independent candidate recall. `PreciseEvidenceSearch` retains raw-query
+  char3 candidates and adds ranking from focused factual-clause char3 results.
+- **New real Kotlin wrapper run:** **280/560 Top-1**, **156/560 passing
+  highlights**, **8/560 with zero results**, median 153ms, p95 245ms.
+  [Run 43256580234](https://github.com/AM246897531/virtual-garden-3d/actions/runs/43256580234).
+  This increases first-source hits by **130 of 560** and reduces no-result
+  queries by **156 of 560** in the same correlated stress suite.
+- JVM Hebrew query regressions passed; further 560-case lexical preservation
+  audit and joint 500+560 tests are configured in the Robolectric workflow.
+  Tests running after the commits above are **not automatically proven to pass**;
+  read their actual GitHub logs before promoting further claims.
+
+### Methodological safeguards
+- The 500 benchmark contains **140 reviewed / 360 source-derived** cases; the
+  560 wrapper suite contains **140 parent questions x4**, not independent
+  questions. Neither 500/500 candidate recall nor 560 source labels proves
+  universal accuracy; strict Top-1 and full answer-span acceptance remain open.
+- Only local source-grounded algorithms; no hardcoded gold law destinations in
+  production. Kotlin source and Robolectric JVM tests, **NO APK** and **NO
+  compilation/merge of production Android branch**.
+- Research-only first-clause answer span ablation
+  `RambamOpeningAnswerSpanAblationTest.kt` is pending a verified real Kotlin
+  run. It must not be integrated if it harms the 140 manually worded cases.
+- Remaining core gap: selecting the correct law among similar candidates for
+  non-literal natural-language questions. Even after the notable wrapper fix,
+  **280/560** Top-1 fails the user's **560/560** robustness criterion and the
+  500 original test remained **431/500** Top-1 in the last verified run.
+
+**User's task remains incomplete.** Continue from actual branch HEAD,
+re-read recent GitHub workflow conclusions, and test each substantive
+improvement on both original and independent-source QA.
