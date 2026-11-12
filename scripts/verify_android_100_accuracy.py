@@ -1,53 +1,111 @@
 #!/usr/bin/env python3
-"""STRICT, reproducible independent acceptance gate for Android Q100 logs.
-Call only on REAL adb logcat output from the app. No APK build occurs here.
+"""Strict real-device accuracy gate for an EXACT single Android QA execution.
+
+Supports Q100 (100 free-form cases) and Q40 (40 non-opening, reviewed cases).
+Never combine cases across runs, ignore missing metrics, or treat an in-bounds
+highlight as a correct source answer. No APK compilation occurs here.
+
+Example after an independently authorized device test:
+    python scripts/verify_android_100_accuracy.py adb.log
+    python scripts/verify_android_100_accuracy.py adb.log --prefix Q40 --total 40
 """
-import argparse, re, sys
+from __future__ import annotations
+import argparse
+import math
+import re
+import sys
 from pathlib import Path
 
-def gate(log: str, expected_total: int=100):
-    case_rx=re.compile(r"Q100_CASE\s+(\d+)/(\d+)\s+(PASS|FAIL)\b[^\n]*")
+def gate(log: str, expected_total: int=100, prefix: str="Q100",
+         max_p95_ms: int | None=None) -> dict:
+    if not re.fullmatch(r"Q(?:40|100)",prefix):
+        raise AssertionError(f"Unsupported strict test prefix {prefix!r}")
+    start_re=re.compile(rf"{prefix}_BEGIN\s+run_id=(\d+)\s+total=(\d+)")
+    begins=list(start_re.finditer(log))
+    if not begins:
+        raise AssertionError("Missing QA run start marker; do not mix legacy logs")
+    begin=begins[-1]
+    run_id=begin.group(1)
+    if int(begin.group(2))!=expected_total:
+        raise AssertionError("Run start has the wrong question count")
+    segment=log[begin.end():]
+    finish_re=re.compile(rf"{prefix}_COMPLETE\s+run_id={re.escape(run_id)}\s+[^\n]*")
+    finishes=list(finish_re.finditer(segment))
+    if len(finishes)!=1:
+        raise AssertionError("Must have exactly one matching run completion")
+    text=segment[:finishes[0].start()]
+    summary=finishes[0].group()
+    case_re=re.compile(
+        rf"{prefix}_CASE\s+run_id={re.escape(run_id)}\s+"
+        rf"(\d+)/(\d+)\s+(PASS|FAIL)\b[^\n]*")
+    cases=list(case_re.finditer(text))
+    all_cases=re.findall(rf"{prefix}_CASE\b",text)
+    if len(cases)!=len(all_cases):
+        raise AssertionError("Found unlinked or malformed case lines")
+    if len(cases)!=expected_total:
+        raise AssertionError(f"Only {len(cases)}/{expected_total} case lines")
     rows={}
-    for m in case_rx.finditer(log):
-        index,total,status=int(m.group(1)),int(m.group(2)),m.group(3)
-        if total!=expected_total or not (1<=index<=expected_total):
-            raise AssertionError(f"Unexpected case {index}/{total}")
-        line=m.group(0)
-        span_m=re.search(r"spanLength=(-?\d+)",line)
-        if not span_m:raise AssertionError(f"No exact span length for case {index}")
-        span=int(span_m.group(1))
-        rows[index]={"source_pass":status=="PASS",
-                     "gold_anchor_pass":bool(re.search(r"\banchor=true\b",line)),
-                     "span_length":span}
-    summary=re.findall(r"Q100_COMPLETE\s+[^\n]*",log)
-    if not summary:raise AssertionError("No completed Q100 Android run; do not claim accuracy")
-    tail=summary[-1]
-    def metric(key):
-        m=re.search(r"\b"+re.escape(key)+r"=(\d+)",tail)
-        if not m:raise AssertionError("Missing "+key)
+    for match in cases:
+        number,total,status=int(match.group(1)),int(match.group(2)),match.group(3)
+        if total!=expected_total or not (1<=number<=expected_total):
+            raise AssertionError(f"Invalid case number {number}/{total}")
+        if number in rows:
+            raise AssertionError(f"Duplicate case {number}; results may be stale")
+        line=match.group(0)
+        def real(name: str) -> float:
+            m=re.search(r"\b"+re.escape(name)+r"=(-?(?:\d+)(?:\.\d+)?)",line)
+            if not m:raise AssertionError(f"Missing {name} for case {number}")
+            value=float(m.group(1))
+            if not math.isfinite(value):
+                raise AssertionError(f"Nonfinite {name} for case {number}")
+            return value
+        length=int(real("spanLength"))
+        coverage=real("goldCoverage")
+        precision=real("highlightPrecision")
+        if status!="PASS":
+            raise AssertionError(f"Wrong top-1 source in case {number}")
+        if re.search(r"\banchor=true\b",line) is None:
+            raise AssertionError(f"Incorrect literal answer anchor in case {number}")
+        if not 0<length<=360:
+            raise AssertionError(f"Invalid/too broad highlight for case {number}")
+        if coverage<.89999 or precision<.19999:
+            raise AssertionError(f"Wrong original-offset answer span in case {number}")
+        rows[number]={"span_length":length,"gold_coverage":coverage,
+                      "highlight_precision":precision}
+    if sorted(rows)!=list(range(1,expected_total+1)):
+        raise AssertionError("Missing a case number inside the run")
+    def metric(key: str) -> int:
+        m=re.search(r"\b"+re.escape(key)+r"=(\d+)",summary)
+        if not m:raise AssertionError(f"Missing final {key}")
         return int(m.group(1))
-    assert len(rows)==expected_total, f"Only {len(rows)}/{expected_total} distinct cases"
-    assert metric("total")==expected_total, "Incomplete test run"
-    assert metric("passed")==expected_total, "Top-1 references failed"
-    assert metric("goldAnchors")==expected_total, "Some answer anchors missing"
-    assert metric("verifiedAnchors")==expected_total, "Some anchor highlights failed"
-    for i in range(1,expected_total+1):
-        case=rows[i]
-        assert case["source_pass"] and case["gold_anchor_pass"], f"Failed {i}"
-        assert 0<case["span_length"]<=360, f"Too broad or invalid highlight for {i}"
-    return rows
+    for field in ("total","passed","highlighted","goldAnchors","verifiedAnchors"):
+        if metric(field)!=expected_total:
+            raise AssertionError(f"Final {field} does not equal {expected_total}")
+    if max_p95_ms is not None and metric("p95_ms")>max_p95_ms:
+        raise AssertionError("Observed p95 search time exceeds acceptance threshold")
+    return {"prefix":prefix,"run_id":run_id,"total":expected_total,
+            "passed":expected_total,"verified":expected_total,
+            "median_ms":metric("median_ms"),"p95_ms":metric("p95_ms"),
+            "max_ms":metric("max_ms"),"cases":rows}
 
-def main():
+def main() -> int:
     p=argparse.ArgumentParser()
     p.add_argument("log",type=Path)
+    p.add_argument("--prefix",choices=["Q100","Q40"],default="Q100")
+    p.add_argument("--total",type=int,default=None)
+    p.add_argument("--max-p95-ms",type=int,default=None)
     args=p.parse_args()
+    total=args.total if args.total is not None else (40 if args.prefix=="Q40" else 100)
     try:
-        cases=gate(args.log.read_text(encoding="utf-8",errors="replace"))
+        r=gate(args.log.read_text(encoding="utf-8",errors="replace"),
+               total,args.prefix,args.max_p95_ms)
     except (AssertionError,OSError) as ex:
-        print("Q100_STRICT_GATE_FAIL",str(ex),file=sys.stderr)
+        print(f"{args.prefix}_STRICT_GATE_FAIL",str(ex),file=sys.stderr)
         return 1
-    print("Q100_STRICT_GATE_PASS 100/100 independent Android top-1 sources, "
-          "100/100 anchors and all exact spans <= 360 characters")
+    print(f"{args.prefix}_STRICT_GATE_PASS run_id={r['run_id']} "
+          f"sources={total}/{total} exact_anchors={total}/{total} "
+          f"median_ms={r['median_ms']} p95_ms={r['p95_ms']}")
     return 0
 
-if __name__=="__main__":raise SystemExit(main())
+if __name__=="__main__":
+    raise SystemExit(main())
