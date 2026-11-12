@@ -10,6 +10,7 @@ on:
       - scripts/test_char_trigram_bridges_100.py
       - scripts/test_verbose_query_recall_100.py
       - scripts/test_focused_conversation_100.py
+      - scripts/test_contrastive_nonopening_100.py
       - scripts/check_kotlin_syntax_no_compile.py
       - scripts/build_char_trigram_index.py
       - scripts/build_gold_answer_offsets.py
@@ -44,6 +45,8 @@ jobs:
         run: python scripts/test_verbose_query_recall_100.py
       - name: Validate 400 natural and verbose questions retain every legal query term
         run: python scripts/test_focused_conversation_100.py
+      - name: Audit 100 non-opening-law examples to detect benchmark first-law bias
+        run: python scripts/test_contrastive_nonopening_100.py
       - name: Confirm early-versus-late Hebrew time intent and unmodified evidence offsets
         run: python scripts/test_natural_query_semantics.py
       - name: Validate 100 question references and verbatim answer-anchor text
@@ -72,6 +75,7 @@ jobs:
             artifacts/corpus_report.json
             artifacts/char3_report.json
             artifacts/gold_answer_offsets_100.json
+            artifacts/contrastive_nonopening_100.json
             artifacts/kotlin_parse_no_compile.json
             artifacts/experimental_e5_100.json
             artifacts/experimental_e5_scores_100.npz
