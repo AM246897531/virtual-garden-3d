@@ -101,6 +101,9 @@ class CorpusStore private constructor(
                         "Bundled chapter context index is incomplete"
                     }
                 }
+                check(model.matchesCorpus(opened)) {
+                    "Local Hebrew semantic model does not match the installed Rambam corpus"
+                }
                 val matchedCharacterIndex=characterIndex?.takeIf {
                     it.matchesCorpus(opened)
                 }
