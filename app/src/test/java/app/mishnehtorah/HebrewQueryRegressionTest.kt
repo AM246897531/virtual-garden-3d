@@ -84,6 +84,17 @@ class HebrewQueryRegressionTest {
             "אם אינו מברך מה הדין").hasNegation)
     }
 
+    @Test fun prefixedInterrogativesAndConditionsPreserveIntent() {
+        assertTrue(SearchLanguage.analyze("וכמה צריך לשלם")
+            .intent==SearchLanguage.Intent.HOW_MANY)
+        assertTrue(SearchLanguage.analyze("ומתי מתחילים לקרוא")
+            .intent==SearchLanguage.Intent.WHEN)
+        assertTrue(SearchLanguage.analyze("ואם לא קרא קריאת שמע")
+            .intent==SearchLanguage.Intent.CONDITION)
+        assertTrue(SearchLanguage.analyze("והיכן אפשר להניח תפילין")
+            .intent==SearchLanguage.Intent.WHERE)
+    }
+
     @Test fun fullOriginalQueryStaysUnmodifiedWithoutMultipleClauses() {
         val q="מהי דרך האופי הישרה לפי הרמבם?"
         assertTrue(SearchLanguage.focusedEvidenceQuery(q)==q)
