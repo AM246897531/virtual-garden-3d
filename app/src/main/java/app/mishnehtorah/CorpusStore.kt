@@ -63,7 +63,7 @@ class CorpusStore private constructor(
             // Previous builds shipped a differently-versioned database with the
             // same app ID. Migrate once on upgrade instead of silently reusing it.
             val prefs = context.getSharedPreferences("corpus_install", Context.MODE_PRIVATE)
-            val corpusEpoch = 5
+            val corpusEpoch = 6
             if (!destination.exists() || destination.length() == 0L ||
                 prefs.getInt("corpus_epoch", 0) != corpusEpoch) {
                 val temporary = File(context.filesDir, "rambam.sqlite.part")
@@ -85,6 +85,20 @@ class CorpusStore private constructor(
                 opened.rawQuery("SELECT COUNT(*) FROM laws", null).use { c ->
                     check(c.moveToFirst() && c.getInt(0) >= 15_000) {
                         "Bundled corpus is incomplete"
+                    }
+                }
+                // Do not silently advertise source-precise search when an
+                // older app-version database lacks the passage index tables.
+                // A fresh-install epoch above guarantees replacement of
+                // the previous SQLite file on the next AUTHORIZED build.
+                opened.rawQuery("SELECT COUNT(*) FROM passages", null).use { c ->
+                    check(c.moveToFirst() && c.getInt(0) >= 15_000) {
+                        "Bundled passage search index is missing or incomplete"
+                    }
+                }
+                opened.rawQuery("SELECT COUNT(*) FROM chapter_leads", null).use { c ->
+                    check(c.moveToFirst() && c.getInt(0) >= 800) {
+                        "Bundled chapter context index is incomplete"
                     }
                 }
                 Log.i("RambamSearch", "SMART_SEARCH_READY corpus=valid semantic=loaded " +
