@@ -144,6 +144,9 @@ fun RambamApp(initialQuery: String = "", debugTypeahead: Boolean = false,
                     for ((asset, prefix) in suite) {
                         val raw = context.assets.open(asset).bufferedReader().use { it.readText() }
                         val cases = JSONArray(raw)
+                        val runId=android.os.SystemClock.elapsedRealtimeNanos()
+                        Log.i("RambamQuality",
+                            "${prefix}_BEGIN run_id=$runId total=${cases.length()}")
                         val timings = ArrayList<Long>()
                         var passed = 0
                         var highlighted = 0
@@ -202,7 +205,7 @@ fun RambamApp(initialQuery: String = "", debugTypeahead: Boolean = false,
                             val excerpt = if (boundsValid)
                                 top!!.text.substring(passage!!.start, passage!!.end)
                                     .replace('\n', ' ').take(130) else "none"
-                            Log.i("RambamQuality", "${prefix}_CASE ${index + 1}/${cases.length()} " +
+                            Log.i("RambamQuality", "${prefix}_CASE run_id=$runId ${index + 1}/${cases.length()} " +
                                 "${if (accurate) "PASS" else "FAIL"} tier=${item.getInt("tier")} " +
                                 "top=${top?.reference ?: "none"} " +
                                 "expected=$section/$expectedChapter/$expectedLaw " +
@@ -215,7 +218,7 @@ fun RambamApp(initialQuery: String = "", debugTypeahead: Boolean = false,
                         val sorted = timings.sorted()
                         val median = sorted[sorted.size / 2]
                         val p95 = sorted[((sorted.size * .95).toInt()).coerceAtMost(sorted.lastIndex)]
-                        Log.i("RambamQuality", "${prefix}_COMPLETE passed=$passed total=${cases.length()} " +
+                        Log.i("RambamQuality", "${prefix}_COMPLETE run_id=$runId passed=$passed total=${cases.length()} " +
                             "highlighted=$highlighted verifiedAnchors=$verifiedAnchors goldAnchors=$goldAnchors " +
                             "median_ms=$median p95_ms=$p95 " +
                             "max_ms=${sorted.last()}")
